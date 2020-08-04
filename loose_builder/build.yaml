@@ -1,12 +1,11 @@
 targets:
   $default:
     builders:
-      loose_builder|loose_entity:
+      loose_builder:
         enabled: true
 
 builders:
-  table:
-    target: ":loose_builder"
+  loose_builder:
     import: "package:loose_builder/src/loose_builder.dart"
     builder_factories: ["LooseBuilder"]
     build_extensions: {".dart": [".loose.g.part"]}
