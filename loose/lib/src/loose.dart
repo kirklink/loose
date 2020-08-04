@@ -42,8 +42,8 @@ class Loose {
   static Loose _cache;
 
   Future _createClient() async {
-    if (_creds.fromMetaServer) {
-      _client = await auth.clientViaMetadataServer();
+    if (_creds.fromApplicationDefault) {
+      _client = await auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
     } else {
       final jsonCreds = auth.ServiceAccountCredentials.fromJson({
         'private_key_id': _creds.privateKeyId,

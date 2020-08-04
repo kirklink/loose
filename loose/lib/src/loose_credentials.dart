@@ -7,10 +7,10 @@ class LooseCredentials {
   final String clientEmail;
   final String clientId;
   final String type;
-  final bool fromMetaServer;
+  final bool fromApplicationDefault;
 
   
-  LooseCredentials._([this.fromMetaServer = false, this.privateKeyId = '', this.privateKey = '', this.clientEmail = '', this.clientId = '', this.type = '']);
+  LooseCredentials._([this.fromApplicationDefault = false, this.privateKeyId = '', this.privateKey = '', this.clientEmail = '', this.clientId = '', this.type = '']);
 
   factory LooseCredentials.fromServiceAccount(String privateKeyId, String privateKey, String clientEmail, String clientId, String type, [String name = '']) {
     if (name.isNotEmpty && _cache.containsKey(name)) {
@@ -23,7 +23,7 @@ class LooseCredentials {
     return creds;
   }
 
-  factory LooseCredentials.fromMetaServer() {
+  factory LooseCredentials.fromApplicationDefaultCredentials() {
     return LooseCredentials._(true);
   }
 
