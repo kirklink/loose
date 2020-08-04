@@ -140,7 +140,11 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
       defaultSuffix = ')';
     }
     var buf = StringBuffer();
-    buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = entity.$inheritedName.map((e) => Value()..");
+    if (fromList) {
+      buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = e.$inheritedName.map((e) => Value()..");
+    } else {
+      buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = entity.$inheritedName.map((e) => Value()..");
+    }
     if (elementType.isDartCoreString) {
       buf.write('stringValue = e');
     } else if (elementType.isDartCoreInt) {

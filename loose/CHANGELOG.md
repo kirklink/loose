@@ -9,3 +9,6 @@
 
 ## 0.0.3
 - Modify build process
+
+## 0.0.4
+- Fix mapping nested lists
