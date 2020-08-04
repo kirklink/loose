@@ -12,3 +12,6 @@
 
 ## 0.0.4
 - Fix mapping nested lists
+
+## 0.0.5
+- Update dependency
