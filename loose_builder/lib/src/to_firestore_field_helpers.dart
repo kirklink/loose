@@ -86,7 +86,9 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
       if (useDefaultValues) {
         defaultValueCheck = '?';
       }
-      buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nested + 1));
+      // reset the nest level 
+      final nestLevel = _checkForLooseDocument.hasAnnotationOfExact(element) ? 0 : nested + 1;
+      buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nestLevel));
       buf.writeln(',');
     }
     buf.writeln('})${nullSuffix}${defaultSuffix}');

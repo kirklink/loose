@@ -11,7 +11,7 @@ final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
-String convertFromFirestore(FieldElement field, int recase, bool globalNull, [String parent = '', bool isNested = false]) {
+String convertFromFirestore(FieldElement field, int recase, bool globalNull, [String parent = '', int nested = 0]) {
   
   
   var name = field.name;
@@ -19,7 +19,7 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
   var allowNull = globalNull;
   var target = "fields['$name']";
 
-  if (!isNested) {
+  if (nested > 0) {
     target = parent + target;
   }
 
@@ -54,7 +54,7 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
       throw ('LooseMap must only annotate a class.');
     }
     final mapBuf = StringBuffer();
-    mapBuf.writeln('$assignment${_looseMapHelper(target, (element as ClassElement), recase, parent: parent, nullable: allowNull)}');
+    mapBuf.writeln('$assignment${_looseMapHelper(target, (element as ClassElement), recase, parent: parent, nullable: allowNull, nested: nested)}');
     return mapBuf.toString();
   } else if (field.type.isDartCoreString) {
     return '..$name = ${_stringHelper(target, allowNull)}';
@@ -120,7 +120,7 @@ String _referenceHelper(String target, [bool nullable = false]) {
   }
 }
 
-String _looseMapHelper(String target, ClassElement element, int recase, {String parent = '', bool nullable = false}) {
+String _looseMapHelper(String target, ClassElement element, int recase, {String parent = '', bool nullable = false, int nested = 0}) {
   final buf = StringBuffer();
   if (nullable) {
     buf.write('$target?.mapValue == null ? null : ');
@@ -131,7 +131,7 @@ String _looseMapHelper(String target, ClassElement element, int recase, {String 
       if (f.isStatic) {
         continue;
       }
-      buf.writeln(convertFromFirestore(f, recase, nullable, '$parent$target.mapValue.', true));
+      buf.writeln(convertFromFirestore(f, recase, nullable, '$parent$target.mapValue.', nested + 1));
     }
     buf.writeln(')');
     return buf.toString();

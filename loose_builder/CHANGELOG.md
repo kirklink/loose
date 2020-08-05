@@ -24,3 +24,6 @@
 
 ## 0.0.8
 - Minor fix
+
+## 0.0.9
+- Better handling of deep nested documents

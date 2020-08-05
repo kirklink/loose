@@ -73,8 +73,8 @@ class Loose {
     }
     // final separator = document.location.path.isEmpty ? '' : '/';
     final f = fs.FirestoreApi(_client);
-    print('path: ${document.location.path}');
     final path = '${_database.rootPath}${document.location.path}/$pathEnd';
+    print(path);
     final fsdoc = await f.projects.databases.documents.get(path);
     final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
     return LooseResponse.single(shell, true);
@@ -90,10 +90,12 @@ class Loose {
     }
     final f = fs.FirestoreApi(_client);
     final newdoc = fs.Document()..fields = document.toFirestoreFields();
-    // final separator = document.location.pathToCollection.isEmpty ? '' : '/';
+    final pathEnd = document.location.pathToCollection == '/' ? '' : document.location.pathToCollection;
+    print('${_database.rootPath}${pathEnd}');
+    print('${document.location.collection}');
     final fsdoc = await f.projects.databases.documents.createDocument(
       newdoc,
-      '${_database.rootPath}${document.location.pathToCollection}',
+      '${_database.rootPath}${pathEnd}',
       '${document.location.collection}',
       documentId: docId
     );
