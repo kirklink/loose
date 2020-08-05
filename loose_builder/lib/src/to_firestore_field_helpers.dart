@@ -86,9 +86,6 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
       if (useDefaultValues) {
         defaultValueCheck = '?';
       }
-      print('inheritedName: $inheritedName');
-      print('parent: $parent');
-      print('full name: $fullName');
       buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nested + 1));
       buf.writeln(',');
     }
