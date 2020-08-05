@@ -11,7 +11,7 @@ final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
-String convertToFirestore(FieldElement field, int recase, bool globalNull, bool globaelUseDefaultValues, [String parent = '', fromList = false]) {
+String convertToFirestore(FieldElement field, int recase, bool globalNull, bool globaelUseDefaultValues, [String parent = '', int nested = 0, bool isList = false]) {
 
   var name = field.name;
 
@@ -50,9 +50,11 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     
 
   }
-
+  
   final inheritedName = '${parent}$name';
-  final fullName = fromList ? 'e.$inheritedName' : 'entity.$inheritedName';
+  final fullName = nested > 1 || isList ? 'e.$inheritedName' : 'entity.$inheritedName';
+
+  
   
   var nullPrefix = '';
   var nullSuffix = '';
@@ -63,14 +65,16 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
 
   
   // LooseMap
-  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element )
-  || _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
+  _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
     final element = field.type.element;
     if (element is! ClassElement) {
       throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.getDisplayString()}');
     }
     var defaultPrefix = '';
     var defaultSuffix = '';
+
+
     
     final buf = StringBuffer();
     buf.writeln("'$name' : ${defaultPrefix}${nullPrefix}Value()..mapValue = (MapValue()..fields = {");
@@ -82,7 +86,10 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
       if (useDefaultValues) {
         defaultValueCheck = '?';
       }
-      buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${name}${defaultValueCheck}.'));
+      print('inheritedName: $inheritedName');
+      print('parent: $parent');
+      print('full name: $fullName');
+      buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nested + 1));
       buf.writeln(',');
     }
     buf.writeln('})${nullSuffix}${defaultSuffix}');
@@ -122,6 +129,13 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     } else {
       return "'$name': ${nullPrefix}Value()..timestampValue = $fullName.toIso8601String()${nullSuffix}";
     }
+  // Reference
+  } else if (field.type.getDisplayString() == 'Reference') {
+    if (useDefaultValues) {
+      return "'$name': Value()..referenceValue = $fullName?.toString() ?? ''";  
+    } else {
+      return "'$name': ${nullPrefix}Value()..referenceValue = $fullName.toString()${nullSuffix}";
+    }
   // List
   } else if (field.type.isDartCoreList) {
     final types = _getGenericTypes(field.type);
@@ -137,16 +151,13 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     final elementType = types.first;
       var defaultPrefix = '';
       var defaultSuffix = '';
+    final listParent = nested > 0 ? 'e' : 'entity';
     if (useDefaultValues) {
-      defaultPrefix = 'entity.$inheritedName == null ? (Value()..arrayValue = (ArrayValue()..values = const [])) : (';
+      defaultPrefix = '$listParent.$inheritedName == null ? (Value()..arrayValue = (ArrayValue()..values = const [])) : (';
       defaultSuffix = ')';
     }
     var buf = StringBuffer();
-    if (fromList) {
-      buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = e.$inheritedName.map((e) => Value()..");
-    } else {
-      buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = entity.$inheritedName.map((e) => Value()..");
-    }
+    buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = $listParent.$inheritedName.map((e) => Value()..");
     if (elementType.isDartCoreString) {
       buf.write('stringValue = e');
     } else if (elementType.isDartCoreInt) {
@@ -166,7 +177,7 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
         if (f.isStatic) {
           continue;
         }
-        buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '', true));
+        buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '', nested + 1, true));
         buf.writeln(',');
       }
       buf.writeln('})');
@@ -175,12 +186,7 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     buf.write(').toList())${nullSuffix}${defaultSuffix}');
     return buf.toString();
 
-  } else if (field.type.getDisplayString() == 'Reference') {
-    if (useDefaultValues) {
-      return "'$name': Value()..referenceValue = entity.$name?.toString() ?? ''";  
-    } else {
-      return "'$name': ${nullPrefix}Value()..referenceValue = entity.$name.toString()${nullSuffix}";
-    }
+
   } else if (field.type.isDartCoreMap) {
     throw LooseBuilderException('Maps should be implemented as a class annotated with @LooseMap');
   } else {

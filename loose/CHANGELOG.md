@@ -18,3 +18,6 @@
 
 ## 0.0.6
 - Allow nesting of documents as a map within another document
+
+## 0.0.7
+- Better handling of deep nested documents

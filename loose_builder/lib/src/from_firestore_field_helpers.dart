@@ -11,12 +11,17 @@ final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
-String convertFromFirestore(FieldElement field, int recase, bool globalNull, [String parent = '']) {
+String convertFromFirestore(FieldElement field, int recase, bool globalNull, [String parent = '', bool isNested = false]) {
   
   
   var name = field.name;
   name = recaseFieldName(recase, name);
   var allowNull = globalNull;
+  var target = "fields['$name']";
+
+  if (!isNested) {
+    target = parent + target;
+  }
 
   if (_checkForLooseField.hasAnnotationOfExact(field)) {
     final reader = ConstantReader(_checkForLooseField.firstAnnotationOf(field));
@@ -31,8 +36,9 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
     final readNull = reader.peek('readNulls')?.boolValue;
     allowNull = (reader.peek('allowNull')?.boolValue ?? readNull) ?? globalNull;
   }
+  
 
-  final target = "${parent}fields['$name']";
+  // final target = "${parent}fields['$name']";
   final assignment = '..$name = ';
 
   // var nullPrefix = '';
@@ -40,12 +46,12 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
   //   nullPrefix = "$target.nullValue == null ? null : ";
   // }
 
-  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) 
-  || _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
+  _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
     final element = field.type.element;
 
     if (element is! ClassElement) {
-      throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.getDisplayString()}');
+      throw ('LooseMap must only annotate a class.');
     }
     final mapBuf = StringBuffer();
     mapBuf.writeln('$assignment${_looseMapHelper(target, (element as ClassElement), recase, parent: parent, nullable: allowNull)}');
@@ -125,7 +131,7 @@ String _looseMapHelper(String target, ClassElement element, int recase, {String 
       if (f.isStatic) {
         continue;
       }
-      buf.writeln(convertFromFirestore(f, recase, nullable, '$parent$target.mapValue.'));
+      buf.writeln(convertFromFirestore(f, recase, nullable, '$parent$target.mapValue.', true));
     }
     buf.writeln(')');
     return buf.toString();
@@ -163,8 +169,8 @@ String _listHelper(FieldElement field, String target, int recase, [bool nullable
     buf.write("${_dateTimeHelper('e')}");
   } else if (elementType.getDisplayString() == 'Reference') {
     buf.write("${_referenceHelper('e')}");
-  } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element) ||
-  _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
+  } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element)
+  || _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
     buf.write("${_looseMapHelper('e', (elementType.element as ClassElement), recase)}");
   }
 
