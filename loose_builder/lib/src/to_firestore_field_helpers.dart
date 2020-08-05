@@ -7,6 +7,7 @@ import 'package:loose/annotations.dart';
 import 'package:loose_builder/src/loose_builder_exception.dart';
 import 'package:loose_builder/src/recase_helper.dart';
 
+final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
@@ -62,10 +63,11 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
 
   
   // LooseMap
-  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element )
+  || _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
     final element = field.type.element;
     if (element is! ClassElement) {
-      throw ('LooseMap must only annotate a class: ${field.type.getDisplayString()}');
+      throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.getDisplayString()}');
     }
     var defaultPrefix = '';
     var defaultSuffix = '';
@@ -157,7 +159,8 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
       buf.write('timestampValue = e.toIso8601String()');
     } else if (elementType.getDisplayString() == 'Reference') {
       buf.write('referenceValue = e.toString()');
-    } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element)) {
+    } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element) ||
+    _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
       buf.write('mapValue = (MapValue()..fields = {');
       for (final f in (elementType.element as ClassElement).fields) {
         if (f.isStatic) {

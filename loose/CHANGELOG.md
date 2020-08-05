@@ -15,3 +15,6 @@
 
 ## 0.0.5
 - Update dependency
+
+## 0.0.6
+- Allow nesting of documents as a map within another document

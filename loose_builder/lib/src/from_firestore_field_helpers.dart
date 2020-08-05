@@ -7,6 +7,7 @@ import 'package:loose/annotations.dart';
 import 'package:loose_builder/src/loose_builder_exception.dart';
 import 'package:loose_builder/src/recase_helper.dart';
 
+final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
@@ -39,11 +40,12 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
   //   nullPrefix = "$target.nullValue == null ? null : ";
   // }
 
-  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+  if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) 
+  || _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
     final element = field.type.element;
 
     if (element is! ClassElement) {
-      throw ('LooseMap must only annotate a class.');
+      throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.getDisplayString()}');
     }
     final mapBuf = StringBuffer();
     mapBuf.writeln('$assignment${_looseMapHelper(target, (element as ClassElement), recase, parent: parent, nullable: allowNull)}');
@@ -161,7 +163,8 @@ String _listHelper(FieldElement field, String target, int recase, [bool nullable
     buf.write("${_dateTimeHelper('e')}");
   } else if (elementType.getDisplayString() == 'Reference') {
     buf.write("${_referenceHelper('e')}");
-  } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element)) {
+  } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element) ||
+  _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
     buf.write("${_looseMapHelper('e', (elementType.element as ClassElement), recase)}");
   }
 
