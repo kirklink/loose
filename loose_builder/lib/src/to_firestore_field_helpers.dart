@@ -11,7 +11,7 @@ final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
-String convertToFirestore(FieldElement field, int recase, bool globalNull, bool globaelUseDefaultValues, [String parent = '', int nested = 0, bool isList = false]) {
+String convertToFirestore(FieldElement field, int recase, bool globalNull, bool globaelUseDefaultValues, [String parent = '', int nested = 0]) {
 
   var name = field.name;
 
@@ -29,6 +29,11 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     if (readOnly) {
       return '';
     }
+
+    if ((reader.peek('ignoreIfNested')?.boolValue ?? false) && nested > 0) {
+      return '';
+    }
+
     final rename = reader.peek('name')?.stringValue ?? '';
     if (rename.isNotEmpty) {
       name = rename;
@@ -52,7 +57,7 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
   }
   
   final inheritedName = '${parent}$name';
-  final fullName = nested > 1 || isList ? 'e.$inheritedName' : 'entity.$inheritedName';
+  final fullName = 'e.$inheritedName';
 
   
   
@@ -87,9 +92,13 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
         defaultValueCheck = '?';
       }
       // reset the nest level 
-      final nestLevel = _checkForLooseDocument.hasAnnotationOfExact(element) ? 0 : nested + 1;
-      buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nestLevel));
-      buf.writeln(',');
+      // final nestLevel = _checkForLooseDocument.hasAnnotationOfExact(element) ? 0 : nested + 1;
+      final nextLine = convertToFirestore(f, recase, nullable, useDefaultValues, '${inheritedName}${defaultValueCheck}.', nested + 1);
+      if (nextLine.isNotEmpty) {
+        buf.write(nextLine);
+        buf.writeln(',');
+      }
+      
     }
     buf.writeln('})${nullSuffix}${defaultSuffix}');
     return buf.toString();
@@ -150,13 +159,12 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
     final elementType = types.first;
       var defaultPrefix = '';
       var defaultSuffix = '';
-    final listParent = nested > 0 ? 'e' : 'entity';
     if (useDefaultValues) {
-      defaultPrefix = '$listParent.$inheritedName == null ? (Value()..arrayValue = (ArrayValue()..values = const [])) : (';
+      defaultPrefix = 'e.$inheritedName == null ? (Value()..arrayValue = (ArrayValue()..values = const [])) : (';
       defaultSuffix = ')';
     }
     var buf = StringBuffer();
-    buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = $listParent.$inheritedName.map((e) => Value()..");
+    buf.write("'$name': ${defaultPrefix}${nullPrefix}Value()..arrayValue = (ArrayValue()..values = e.$inheritedName.map((e) => Value()..");
     if (elementType.isDartCoreString) {
       buf.write('stringValue = e');
     } else if (elementType.isDartCoreInt) {
@@ -176,7 +184,7 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
         if (f.isStatic) {
           continue;
         }
-        buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '', nested + 1, true));
+        buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '', nested + 1,));
         buf.writeln(',');
       }
       buf.writeln('})');

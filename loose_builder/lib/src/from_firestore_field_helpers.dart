@@ -29,6 +29,11 @@ String convertFromFirestore(FieldElement field, int recase, bool globalNull, [St
     if (ignore) {
       return '';
     }
+    
+    if ((reader.peek('ignoreIfNested')?.boolValue ?? false) && nested > 0) {
+      return '';
+    }
+    
     final rename = reader.peek('name')?.stringValue ?? '';
     if (rename.isNotEmpty) {
       name = rename;

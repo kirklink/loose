@@ -9,6 +9,7 @@ import 'package:loose/src/document_shell.dart';
 import 'package:loose/src/loose_response.dart';
 import 'package:loose/src/reference.dart';
 import 'package:loose/src/firestore_database.dart';
+import 'package:loose/src/constants.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
@@ -60,37 +61,44 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, String id) async {
-    if (document.location.name == '@' && id.isEmpty) {
-      throw LooseException('An id should be provided for the document at ${document.location}');
+  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, List<String> idPath) async {
+    var pathEnd = '${document.location.path}/${document.location.name}';
+    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+    if (ancestorCount != idPath.length) {
+      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
     }
-    if (document.location.name != '@' && id.isNotEmpty) {
-      throw LooseException('An id should not be provided for the document ${document.location}');
+    for (final x in idPath) {
+      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
     }
-    final pathEnd = document.location.name == '@' ? id : document.location.name;
+    
     if (_client == null) {
       await _createClient();
     }
     // final separator = document.location.path.isEmpty ? '' : '/';
     final f = fs.FirestoreApi(_client);
-    final path = '${_database.rootPath}${document.location.path}/$pathEnd';
+    final path = '${_database.rootPath}$pathEnd';
     print(path);
     final fsdoc = await f.projects.databases.documents.get(path);
     final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
     return LooseResponse.single(shell, true);
   }
 
-  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [String id = '']) async {
-    if (document.location.name != '@' && id.isNotEmpty) {
-      throw LooseException('An id should not be provided for the document at ${document.location.pathToCollection}${document.location.collection}/');
+  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {String id = '', List<String> ancestorIds = const []}) async {
+    var pathEnd = document.location.pathToCollection == '/' ? '' : document.location.pathToCollection;
+    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;
+    if (ancestorCount != ancestorIds.length) {
+      throw LooseException('${ancestorIds.length} ancestor ids were provided. $ancestorCount required in $pathEnd');
     }
-    final docId = document.location.name != '@' ? document.location.name : id.isNotEmpty ? id : null;
+    for (final x in ancestorIds) {
+      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    }
+    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
     if (_client == null) {
       await _createClient();
     }
     final f = fs.FirestoreApi(_client);
     final newdoc = fs.Document()..fields = document.toFirestoreFields();
-    final pathEnd = document.location.pathToCollection == '/' ? '' : document.location.pathToCollection;
+    
     print('${_database.rootPath}${pathEnd}');
     print('${document.location.collection}');
     final fsdoc = await f.projects.databases.documents.createDocument(
@@ -105,10 +113,10 @@ class Loose {
 
 
   Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [String id = '']) async {
-    if (document.location.name != '@' && id.isNotEmpty) {
+    if (document.location.name != dynamicNameToken && id.isNotEmpty) {
       throw LooseException('An id should not be provided for the document at ${document.location.pathToCollection}/${document.location.collection}/');
     }
-    final docId = document.location.name != '@' ? document.location.name : id.isNotEmpty ? id : null;
+    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
     if (_client == null) {
       await _createClient();
     }
@@ -124,10 +132,10 @@ class Loose {
 
 
   Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [String id = '']) async {
-    if (document.location.name != '@' && id.isNotEmpty) {
+    if (document.location.name != dynamicNameToken && id.isNotEmpty) {
       throw LooseException('An id should not be provided for the document at ${document.location.pathToCollection}${document.location.collection}/');
     }
-    final docId = document.location.name != '@' ? document.location.name : id.isNotEmpty ? id : null;
+    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
     if (_client == null) {
       await _createClient();
     }

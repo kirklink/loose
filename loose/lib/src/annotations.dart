@@ -49,7 +49,17 @@ class LooseField {
   final bool canQuery;
   final bool useDefaultValue;
   final bool readNulls;
-  const LooseField({this.name = '', this.readOnly = false, this.ignore = false, this.allowNull, this.canQuery = false, this.useDefaultValue, this.readNulls});
+  final bool ignoreIfNested;
+  const LooseField({
+    this.name = '',
+    this.readOnly = false,
+    this.ignore = false,
+    this.allowNull,
+    this.canQuery = false,
+    this.useDefaultValue,
+    this.readNulls,
+    this.ignoreIfNested
+    });
 }
 
 

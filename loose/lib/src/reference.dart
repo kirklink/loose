@@ -3,6 +3,7 @@ import 'package:googleapis/firestore/v1.dart' as fs;
 import 'package:loose/src/documenter.dart';
 import 'package:loose/src/firestore_database.dart';
 import 'package:loose/src/loose_exception.dart';
+import 'package:loose/src/constants.dart';
 
 class Reference {
   String _location;
@@ -10,10 +11,10 @@ class Reference {
   // String get location => _location;
   
   Reference(Documenter document, FirestoreDatabase database, [String name = '']) {
-    if (document.location.name == '@' && name.isEmpty) {
+    if (document.location.name == dynamicNameToken && name.isEmpty) {
       throw LooseException('A document name must be provided.');
     }
-    if (document.location.name != '@') {
+    if (document.location.name != dynamicNameToken) {
       name = document.location.name;
     }
     _location = '${database.rootPath}/${document.location.path}/$name';

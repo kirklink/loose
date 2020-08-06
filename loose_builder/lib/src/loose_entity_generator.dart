@@ -109,6 +109,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('}');
     classBuf.writeln('@override');
     classBuf.writeln('Map<String, Value> toFirestoreFields() {');
+    classBuf.writeln('final e = entity;');
     classBuf.writeln('return {');
     // toFields
     final toFields = StringBuffer();

@@ -27,3 +27,6 @@
 
 ## 0.0.9
 - Better handling of deep nested documents
+
+## 0.0.10
+- Allow fields to be ignored when nested
