@@ -184,8 +184,11 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
         if (f.isStatic) {
           continue;
         }
-        buf.write(convertToFirestore(f, recase, nullable, useDefaultValues, '', nested + 1,));
-        buf.writeln(',');
+        final nextLine = convertToFirestore(f, recase, nullable, useDefaultValues, '', nested + 1);
+        if (nextLine.isNotEmpty) {
+          buf.write(nextLine);
+          buf.writeln(',');
+        }
       }
       buf.writeln('})');
       }

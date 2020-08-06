@@ -30,3 +30,6 @@
 
 ## 0.0.10
 - Allow fields to be ignored when nested
+
+## 0.0.11
+- Fix empty line in generator
