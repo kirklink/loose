@@ -33,3 +33,6 @@
 
 ## 0.0.11
 - Fix empty line in generator
+
+## 0.0.12
+- Accept complete document paths with variables
