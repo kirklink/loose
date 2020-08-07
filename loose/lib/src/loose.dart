@@ -61,7 +61,7 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, List<String> idPath) async {
+  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
     var pathEnd = '${document.location.path}/${document.location.name}';
     final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
     if (ancestorCount != idPath.length) {
@@ -83,16 +83,27 @@ class Loose {
     return LooseResponse.single(shell, true);
   }
 
-  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {String id = '', List<String> ancestorIds = const []}) async {
+  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+    
+    
+    if (document.location.name == dynamicNameToken && idPath.isEmpty) {
+      throw LooseException('A name is required for this document but was not provided in idPath.');
+    }
+    
+    var docId = '';
+    if (document.location.name == dynamicNameToken) {
+      docId = idPath.removeLast();
+    }
+    
     var pathEnd = document.location.pathToCollection == '/' ? '' : document.location.pathToCollection;
     final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;
-    if (ancestorCount != ancestorIds.length) {
-      throw LooseException('${ancestorIds.length} ancestor ids were provided. $ancestorCount required in $pathEnd');
+    if (ancestorCount != idPath.length) {
+      throw LooseException('${idPath.length} ancestor ids were provided. $ancestorCount required in $pathEnd');
     }
-    for (final x in ancestorIds) {
-      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    for (final id in idPath) {
+      pathEnd = pathEnd.replaceFirst(dynamicNameToken, id);
     }
-    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
+
     if (_client == null) {
       await _createClient();
     }
@@ -112,11 +123,16 @@ class Loose {
   }
 
 
-  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [String id = '']) async {
-    if (document.location.name != dynamicNameToken && id.isNotEmpty) {
-      throw LooseException('An id should not be provided for the document at ${document.location.pathToCollection}/${document.location.collection}/');
+  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+    var pathEnd = '${document.location.path}/${document.location.name}';
+    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+    if (ancestorCount != idPath.length) {
+      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
     }
-    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
+    for (final x in idPath) {
+      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    }
+    
     if (_client == null) {
       await _createClient();
     }
@@ -124,24 +140,29 @@ class Loose {
     final updateDoc = fs.Document()..fields = document.toFirestoreFields();
     final fsdoc = await f.projects.databases.documents.patch(
       updateDoc,
-      '${_database.rootPath}${document.location.path}/$docId'
+      '${_database.rootPath}${pathEnd}'
     );
     final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
     return LooseResponse.single(shell, true);
   }
 
 
-  Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [String id = '']) async {
-    if (document.location.name != dynamicNameToken && id.isNotEmpty) {
-      throw LooseException('An id should not be provided for the document at ${document.location.pathToCollection}${document.location.collection}/');
+  Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+    var pathEnd = '${document.location.path}/${document.location.name}';
+    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+    if (ancestorCount != idPath.length) {
+      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
     }
-    final docId = document.location.name != dynamicNameToken ? document.location.name : id.isNotEmpty ? id : null;
+    for (final x in idPath) {
+      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    }
+    
     if (_client == null) {
       await _createClient();
     }
     final f = fs.FirestoreApi(_client);
     await f.projects.databases.documents.delete(
-      '${_database.rootPath}${document.location.path}/$docId'
+      '${_database.rootPath}${pathEnd}'
     );
     return LooseResponse.single(DocumentShell.empty as T, true);
   }
