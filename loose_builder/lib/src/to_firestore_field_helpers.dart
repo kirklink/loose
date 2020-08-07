@@ -57,8 +57,13 @@ String convertToFirestore(FieldElement field, int recase, bool globalNull, bool 
   }
   
   final inheritedName = '${parent}$name';
-  final fullName = 'e.$inheritedName';
-
+  String fullName;
+  if (useDefaultValues) {
+    fullName = 'e?.$inheritedName';
+  } else {
+    fullName = 'e.$inheritedName';
+  }
+  
   
   
   var nullPrefix = '';

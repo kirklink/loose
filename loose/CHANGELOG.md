@@ -36,3 +36,6 @@
 
 ## 0.0.12
 - Accept complete document paths with variables
+
+## 0.0.13
+- Handled nested values using default values
