@@ -108,7 +108,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln(('return $documentName(e, name, createTime, updateTime);'));
     classBuf.writeln('}');
     classBuf.writeln('@override');
-    classBuf.writeln('Map<String, Value> toFirestoreFields() {');
+    classBuf.writeln('Map<String, Object> toFirestoreFields() {');
     classBuf.writeln('final e = entity;');
     classBuf.writeln('return {');
     // toFields

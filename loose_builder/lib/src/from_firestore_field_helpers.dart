@@ -187,3 +187,8 @@ String _listHelper(FieldElement field, String target, int recase, [bool nullable
 Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
+
+
+
+
+

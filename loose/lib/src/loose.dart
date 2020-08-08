@@ -61,7 +61,7 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
     var pathEnd = '${document.location.path}/${document.location.name}';
     final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
     if (ancestorCount != idPath.length) {
@@ -83,7 +83,7 @@ class Loose {
     return LooseResponse.single(shell, true);
   }
 
-  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
     
     
     if (document.location.name == dynamicNameToken && idPath.isEmpty) {
@@ -123,7 +123,7 @@ class Loose {
   }
 
 
-  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
     var pathEnd = '${document.location.path}/${document.location.name}';
     final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
     if (ancestorCount != idPath.length) {
@@ -147,7 +147,7 @@ class Loose {
   }
 
 
-  Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, [List<String> idPath = const []]) async {
+  Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
     var pathEnd = '${document.location.path}/${document.location.name}';
     final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
     if (ancestorCount != idPath.length) {
