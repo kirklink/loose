@@ -15,7 +15,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, bool globalUseDefaultValues, {String parent = '', int nestLevel = 0}) {
+String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, bool globalUseDefaultValues, {String parent = '', bool parentAllowNull = false, int nestLevel = 0}) {
 
   final classBuffer = StringBuffer();
   classBuffer.writeln('{');
@@ -78,7 +78,10 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       mode = ', useDefaultValue: true';
     } else if (allowNull) {
       mode = ', allowNull: true';
+    } else if (parentAllowNull) {
+      mode = ', allowNull: (e?.$parent == null)';
     }
+    
     if (field.type.isDartCoreString) {
       classBuffer.writeln("...{'$name' : ToFs.string(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
     } else if (field.type.isDartCoreInt) {
@@ -100,7 +103,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
         nestLevel = nestLevel + 1;
       }
-      classBuffer.write("...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalAllowNull, globalUseDefaultValues, parent: inheritedName, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+      classBuffer.write("...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalAllowNull, globalUseDefaultValues, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
     // List
     } else if (field.type.isDartCoreList) {
       final elementTypes = _getGenericTypes(field.type);

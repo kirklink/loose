@@ -128,6 +128,7 @@ class ToFs {
     if (useDefaultValue && allowNull) {
       throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
+    print('map name: $name');
     if (fields != null) {
       return {
         'mapValue': {
