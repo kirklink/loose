@@ -13,6 +13,18 @@ import 'package:loose/src/constants.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
+
+
+
+
+abstract class LooseErrors {
+  static const documentExists = LooseError(409, 'Document already exists');
+  // static const notFound = LooseError(1, 'Document not found');
+  static const apiCallFailed = LooseError(500, 'Call to Firestore failed.');
+}
+
+
+
 class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
@@ -23,7 +35,6 @@ class Loose {
   Loose._(LooseCredentials credentials, FirestoreDatabase database) {
     _creds = credentials;
     _database = database;
-    print(_SCOPES);
   }
 
   factory Loose() {
@@ -84,6 +95,9 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
 
     final res = await _client.post(uri);
+    if (res.statusCode == 409) {
+      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.documentExists);
+    }
 
     final resBody = json.decode(res.body);
     final shell = document.fromFirestore(
@@ -91,7 +105,7 @@ class Loose {
         resBody['name'] as String,
         resBody['createTime'] as String,
         resBody['updateTime'] as String);
-    return LooseResponse.single(shell, true);
+    return LooseResponse.single(shell);
   }
 
   Future<LooseResponse<T, S>>
@@ -135,13 +149,13 @@ class Loose {
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     final resBody = json.decode(res.body) as Map<String, Object>;
-    print(resBody);
+
     final shell = document.fromFirestore(
         resBody['fields'] as Map<String, Object>,
         resBody['name'] as String,
         resBody['createTime'] as String,
         resBody['updateTime'] as String);
-    return LooseResponse.single(shell, true);
+    return LooseResponse.single(shell);
   }
 
   Future<LooseResponse<T, S>>
@@ -173,7 +187,7 @@ class Loose {
         resBody['name'] as String,
         resBody['createTime'] as String,
         resBody['updateTime'] as String);
-    return LooseResponse.single(shell, true);
+    return LooseResponse.single(shell);
   }
 
   Future<LooseResponse<T, S>>
@@ -195,16 +209,16 @@ class Loose {
     }
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
-    return LooseResponse.single(DocumentShell.empty as T, true);
+    return LooseResponse.single(DocumentShell.empty as T);
   }
 
-  // 409 Already exists
+
   Future<LooseResponse<T, S>>
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
           Query<T, S, R> query) async {
     final rawBody = query.encode;
     final reqBody = json.encode(rawBody);
-    print(reqBody);
+
     if (_client == null) {
       await _createClient();
     }
@@ -212,30 +226,27 @@ class Loose {
     final uri = Uri.https(authority,
         '${_database.rootPath}${query.document.location.pathToCollection}:runQuery');
 
-    var resBody = '';
-    try {
-      final resp = await _client.post(uri, body: reqBody);
-      resBody = resp.body;
-    } catch (e) {
-      return LooseResponse.list(const [], false, 1);
+   final res = await _client.post(uri, body: reqBody);
+   if (res.statusCode < 200 || res.statusCode > 299) {
+      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
     }
 
-    final decoded = json.decode(resBody);
-    print(decoded);
+    final decoded = json.decode(res.body);
+
+    // If no object contains 'document', no documents were returned
     if (!((decoded as List)[0] as Map).containsKey('document')) {
-      return LooseResponse.list(const [], true);
+      return LooseResponse.list(const []);
     }
     return LooseResponse.list(
         (decoded as List).map((e) {
           final doc = (e as Map)['document'] as Map;
-          // print(doc.toJson());
+
           return query.document.fromFirestore(
               doc['fields'] as Map<String, Object>,
               doc['name'] as String,
               doc['createTime'] as String,
               doc['updateTime'] as String);
-        }).toList(),
-        true);
+        }).toList());
   }
 
   void done() {

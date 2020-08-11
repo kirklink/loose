@@ -4,21 +4,40 @@
 import 'package:loose/src/document_shell.dart';
 import 'package:loose/src/loose_exception.dart';
 
+class LooseError {
+
+ final int code;
+ final String message;
+
+ const LooseError._([this.code, this.message]);
+ const LooseError(this.code, this.message);
+
+ static const LooseError empty = LooseError._();
+
+ bool get isEmpty => code == null && message == null;
+ bool get isNotEmpty => !isEmpty;
+
+}
+
+
 class LooseResponse<T extends DocumentShell<S>, S> {
   DocumentShell<S> _shell;
   List<T> _shellList;
   bool _isList;
-  final bool success;
-  final int error;
+  final LooseError error;
+
+  bool get success => error.isEmpty;
+
+  int get count => !success ? 0 : !_isList ? 1 : _shellList.length;
 
   
-  LooseResponse.single(T shell, this.success, [this.error = 0]) {
+  LooseResponse.single(T shell, [this.error = LooseError.empty]) {
     _isList = false;
     _shell = shell;
     _shellList = const [];
   }
 
-  LooseResponse.list(List<T> list, this.success, [this.error = 0]) {
+  LooseResponse.list(List<T> list, [this.error = LooseError.empty]) {
     _isList = true;
     _shell = DocumentShell.empty<S>();
     _shellList = list;
