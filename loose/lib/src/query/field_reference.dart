@@ -1,5 +1,5 @@
 class FieldReference {
   final String _name;
   const FieldReference(this._name);
-  Map<String, String> get result => {'fieldPath': _name};
+  Map<String, String> get encode => {'fieldPath': _name};
 }

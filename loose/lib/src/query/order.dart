@@ -8,7 +8,7 @@ class Order {
   final Direction _direction;
   const Order(this._field, this._direction);
 
-  Map<String, Object> get product => {
+  Map<String, Object> get encode => {
     'field': _field.result,
     'direction': convertDirection(_direction)
   };

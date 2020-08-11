@@ -8,8 +8,8 @@ abstract class QueryField<T> {
   QueryField(String name) {
     _field = FieldReference(name);
   }
-  Map<String, String> get result => _field.result;
-  fs.Value compare(T comparable);
+  Map<String, String> get result => _field.encode;
+  Map<String, Object> compare(T comparable);
 }
 
 class StringField extends QueryField<String> {
@@ -17,8 +17,8 @@ class StringField extends QueryField<String> {
   StringField(String name) : super(name);
   
   @override
-  fs.Value compare(String string) {
-    return (fs.Value()..stringValue = string);
+  Map<String, Object> compare(String string) {
+    return {'stringValue': string};
   }
 }
 
@@ -27,8 +27,8 @@ class IntegerField extends QueryField<int> {
   IntegerField(String name) : super(name);
   
   @override
-  fs.Value compare(int integer) {
-    return (fs.Value()..integerValue = integer.toString());
+  Map<String, Object> compare(int integer) {
+    return {'integerValue': integer.toString()};
   }
 }
 
@@ -37,8 +37,8 @@ class DoubleField extends QueryField<double> {
   DoubleField(String name) : super(name);
 
   @override
-  fs.Value compare(double float) {
-    return (fs.Value()..doubleValue = float);
+  Map<String, Object> compare(double float) {
+    return {'doubleValue': float};
   }
 
 }
@@ -48,8 +48,8 @@ class BoolField extends QueryField<bool> {
   BoolField(String name) : super(name);
 
   @override
-  fs.Value compare(bool boolean) {
-    return (fs.Value()..booleanValue = boolean);
+  Map<String, Object> compare(bool boolean) {
+    return {'booleanValue': boolean};
   }
 }
 
@@ -58,8 +58,8 @@ class DateTimeField extends QueryField<DateTime> {
   DateTimeField(String name) : super(name);
 
   @override
-  fs.Value compare(DateTime datetime) {
-    return (fs.Value()..timestampValue = datetime.toIso8601String());
+  Map<String, Object> compare(DateTime datetime) {
+    return {'timestampValue': datetime.toIso8601String()};
   }
 
 }
@@ -68,12 +68,12 @@ class ReferenceField extends QueryField<Reference> {
   ReferenceField(String name) : super(name);
 
   @override
-  fs.Value compare(Reference reference) {
-    return (fs.Value()..referenceValue = reference.toString());
+  Map<String, Object> compare(Reference reference) {
+    return {'referenceValue': reference.toString()};
   }
 }
 
-typedef ValueMapper<T> = fs.Value Function(T element);
+typedef ValueMapper<T> = Map<String, Object> Function(T element);
 
 class ArrayField<T> extends QueryField<T> {
 
@@ -82,7 +82,7 @@ class ArrayField<T> extends QueryField<T> {
   ArrayField(String name, this._mapper) : super(name);
 
   @override
-  fs.Value compare(T element) {
+  Map<String, Object> compare(T element) {
     return (_mapper(element));
   }
 

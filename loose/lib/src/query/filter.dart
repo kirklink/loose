@@ -8,7 +8,7 @@ import 'package:loose/src/query/query_enum_converters.dart';
 abstract class BaseFilter {
   final String _op;
   BaseFilter(this._op);
-  Map<String, Object> get result;
+  Map<String, Object> get encode;
 }
 
 class CompositeFilter extends BaseFilter {
@@ -22,11 +22,11 @@ class CompositeFilter extends BaseFilter {
   }
   
   @override
-  Map<String, Object> get result {
+  Map<String, Object> get encode {
     return {
       'compositeFilter': {
         'op': super._op,
-        'filters': _filters.map((e) => e.result).toList()
+        'filters': _filters.map((e) => e.encode).toList()
       }
     };
   }
@@ -45,7 +45,7 @@ class Filter<T> extends BaseFilter {
 
   final QueryField<T> _field;
 
-  final _comparables = <fs.Value>[];
+  final _comparables = <Map<String, Object>>[];
   
   bool _listOp = false;
   bool _unaryOp = false;
@@ -69,7 +69,7 @@ class Filter<T> extends BaseFilter {
     
   
   @override
-  Map<String, Object> get result {    
+  Map<String, Object> get encode {    
     if (_unaryOp) {
       return {
       'unaryFilter': {
@@ -85,7 +85,7 @@ class Filter<T> extends BaseFilter {
           'op': super._op,
           'value': {
             'arrayValue': {
-              'values': _comparables.map((e) => e.toJson()).toList()
+              'values': _comparables
             }
           }
         }
@@ -95,7 +95,7 @@ class Filter<T> extends BaseFilter {
         'fieldFilter': {
           'field': _field.result,
           'op': super._op,
-          'value': _comparables[0].toJson()
+          'value': _comparables[0]
         }
       };
     }

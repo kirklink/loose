@@ -28,7 +28,7 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
   }
 
 
-  Map<String, Object> get result {
+  Map<String, Object> get encode {
     return {
       'structuredQuery': {
         'from': [
@@ -36,8 +36,8 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
             'collectionId': document.location.collection
           }
         ],
-        'where': _filter.result,
-        'orderBy': _orders.map((e) => e.product).toList()
+        'where': _filter.encode,
+        'orderBy': _orders.map((e) => e.encode).toList()
       }
     };
   }

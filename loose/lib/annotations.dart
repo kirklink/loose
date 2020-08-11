@@ -8,4 +8,5 @@ export 'src/reference.dart';
 export 'src/query/query_field.dart';
 export 'src/query/query.dart';
 export 'src/convert_to_firestore.dart';
-export 'package:googleapis/firestore/v1.dart' show Value, MapValue, ArrayValue;
+export 'src/convert_from_firestore.dart';
+// export 'package:googleapis/firestore/v1.dart' show Value, MapValue, ArrayValue;

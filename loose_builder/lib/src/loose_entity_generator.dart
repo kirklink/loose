@@ -89,44 +89,26 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('$documentName from($className entity) => $documentName(entity);');
     classBuf.writeln('');
     classBuf.writeln('@override');
-    classBuf.writeln('$documentName fromFirestore(Map<String, Value> fields, String name, String createTime, String updateTime) {');
+    classBuf.writeln('$documentName fromFirestore(Map<String, Object> m, String name, String createTime, String updateTime) {');
     classBuf.write('final e = $className()');
     // fromFields
-    final fromFields = StringBuffer();
-    for (var field in (element as ClassElement).fields) {
-      if (field.isStatic) {
-        continue;
-      }
-      final converted = convertFromFirestore(field, recase, allowNull);
-      fromFields.writeln(converted);
-      
-    }
-    fromFields.write(';');
-    classBuf.writeln(fromFields);
+    classBuf.writeln(convertFromFirestore(element, recase, allowNull));
+
+    classBuf.writeln(';');
 
     // !fromFields
     classBuf.writeln(('return $documentName(e, name, createTime, updateTime);'));
     classBuf.writeln('}');
+    classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln('Map<String, Object> toFirestoreFields() {');
     classBuf.writeln('final e = entity;');
-    classBuf.writeln('return {');
+    classBuf.write("return {'fields': ");
     // toFields
-    final toFields = StringBuffer();
-    for (var field in (element as ClassElement).fields) {
-      if (field.isStatic) {
-        continue;
-      }
-      final converted = convertToFirestore(field, recase, allowNull, useDefaultValues);
-      if (converted.isNotEmpty) {
-        toFields.writeln(converted + ',');
-      }
-      
-    }
-    classBuf.writeln(toFields);
+    final converted = convertToFirestore(element, recase, allowNull, useDefaultValues);     
+    classBuf.writeln(converted);
+    classBuf.writeln('};}');
     // !toFields
-    classBuf.writeln('};');
-    classBuf.writeln('}');
     classBuf.writeln('}');
     return classBuf.toString();
   }

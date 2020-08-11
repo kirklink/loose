@@ -1,5 +1,3 @@
-import 'package:googleapis/firestore/v1.dart' as fs;
-
 import 'package:loose/src/documenter.dart';
 import 'package:loose/src/firestore_database.dart';
 import 'package:loose/src/loose_exception.dart';
@@ -33,8 +31,8 @@ class Reference {
     return toString() == other.toString();
   }
   
-  Reference.fromFirestore(fs.Value value) {
-    _location = value.referenceValue;
+  Reference.fromFirestore(Map<String, Object> value) {
+    _location = value['referenceValue'] as String;
   }
 
   

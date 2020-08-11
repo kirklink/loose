@@ -1,7 +1,7 @@
 import 'dart:convert' show json;
-import 'package:http/http.dart' as http;
+
 import 'package:googleapis_auth/auth_io.dart' as auth;
-import 'package:googleapis/firestore/v1.dart' as fs;
+// import 'package:googleapis/firestore/v1.dart' as fs;
 
 import 'package:loose/src/loose_credentials.dart';
 import 'package:loose/src/documenter.dart';
@@ -14,18 +14,18 @@ import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
 class Loose {
+  final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
-  final _SCOPES = const [fs.FirestoreApi.CloudPlatformScope, fs.FirestoreApi.DatastoreScope];
-  
   LooseCredentials _creds;
   auth.AutoRefreshingAuthClient _client;
   FirestoreDatabase _database;
-  
+
   Loose._(LooseCredentials credentials, FirestoreDatabase database) {
     _creds = credentials;
     _database = database;
+    print(_SCOPES);
   }
-  
+
   factory Loose() {
     if (_cache == null) {
       throw LooseException('Loose has not been initialized with Loose.init()');
@@ -44,7 +44,8 @@ class Loose {
 
   Future _createClient() async {
     if (_creds.fromApplicationDefault) {
-      _client = await auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
+      _client =
+          await auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
     } else {
       final jsonCreds = auth.ServiceAccountCredentials.fromJson({
         'private_key_id': _creds.privateKeyId,
@@ -61,141 +62,183 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-  Future<LooseResponse<T, S>> read<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
-    var pathEnd = '${document.location.path}/${document.location.name}';
-    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+  Future<LooseResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const []}) async {
+    var workingPath = '${document.location.path}/${document.location.name}';
+
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
-      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
+      throw LooseException(
+          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
     }
-    for (final x in idPath) {
-      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
-    
+
     if (_client == null) {
       await _createClient();
     }
-    // final separator = document.location.path.isEmpty ? '' : '/';
-    final f = fs.FirestoreApi(_client);
-    final path = '${_database.rootPath}$pathEnd';
-    print(path);
-    final fsdoc = await f.projects.databases.documents.get(path);
-    final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
+
+    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+
+    final res = await _client.post(uri);
+
+    final resBody = json.decode(res.body);
+    final shell = document.fromFirestore(
+        resBody['fields'] as Map<String, Object>,
+        resBody['name'] as String,
+        resBody['createTime'] as String,
+        resBody['updateTime'] as String);
     return LooseResponse.single(shell, true);
   }
 
-  Future<LooseResponse<T, S>> create<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
-    
-    
+  Future<LooseResponse<T, S>>
+      create<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const []}) async {
     if (document.location.name == dynamicNameToken && idPath.isEmpty) {
-      throw LooseException('A name is required for this document but was not provided in idPath.');
+      throw LooseException(
+          'A name is required for this document but was not provided in idPath.');
     }
-    
+
     var docId = '';
     if (document.location.name == dynamicNameToken) {
       docId = idPath.removeLast();
     }
-    
-    var pathEnd = document.location.pathToCollection == '/' ? '' : document.location.pathToCollection;
-    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;
+
+    var workingPath = '${document.location.path}';
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
-      throw LooseException('${idPath.length} ancestor ids were provided. $ancestorCount required in $pathEnd');
+      throw LooseException(
+          '${idPath.length} ancestor ids were provided. $ancestorCount required in $workingPath');
     }
     for (final id in idPath) {
-      pathEnd = pathEnd.replaceFirst(dynamicNameToken, id);
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
 
     if (_client == null) {
       await _createClient();
     }
-    final f = fs.FirestoreApi(_client);
-    final newdoc = fs.Document()..fields = document.toFirestoreFields();
-    
-    print('${_database.rootPath}${pathEnd}');
-    print('${document.location.collection}');
-    final fsdoc = await f.projects.databases.documents.createDocument(
-      newdoc,
-      '${_database.rootPath}${pathEnd}',
-      '${document.location.collection}',
-      documentId: docId
-    );
-    final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
+
+    Uri uri;
+    if (docId.isNotEmpty) {
+      uri = Uri.https(authority, '${_database.rootPath}${workingPath}',
+          {'documentId': docId});
+    } else {
+      uri = Uri.https(
+          authority, '${_database.rootPath}${document.location.path}');
+    }
+
+    final reqBody = document.toFirestoreFields();
+    final res = await _client.post(uri, body: json.encode(reqBody));
+
+    final resBody = json.decode(res.body) as Map<String, Object>;
+    print(resBody);
+    final shell = document.fromFirestore(
+        resBody['fields'] as Map<String, Object>,
+        resBody['name'] as String,
+        resBody['createTime'] as String,
+        resBody['updateTime'] as String);
     return LooseResponse.single(shell, true);
   }
 
-
-  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
-    var pathEnd = '${document.location.path}/${document.location.name}';
-    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+  Future<LooseResponse<T, S>>
+      update<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const []}) async {
+    var workingPath = '${document.location.path}/${document.location.name}';
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
-      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
+      throw LooseException(
+          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
     }
-    for (final x in idPath) {
-      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
-    
+
     if (_client == null) {
       await _createClient();
     }
-    final f = fs.FirestoreApi(_client);
-    final updateDoc = fs.Document()..fields = document.toFirestoreFields();
-    final fsdoc = await f.projects.databases.documents.patch(
-      updateDoc,
-      '${_database.rootPath}${pathEnd}'
-    );
-    final shell = document.fromFirestore(fsdoc.fields, fsdoc.name, fsdoc.createTime, fsdoc.updateTime);
+
+    final uri =
+        Uri.https(authority, '${_database.rootPath}${document.location.path}');
+    final reqBody = document.toFirestoreFields();
+    final res = await _client.post(uri, body: json.encode(reqBody));
+
+    final resBody = json.decode(res.body);
+    final shell = document.fromFirestore(
+        resBody['fields'] as Map<String, Object>,
+        resBody['name'] as String,
+        resBody['createTime'] as String,
+        resBody['updateTime'] as String);
     return LooseResponse.single(shell, true);
   }
 
-
-  Future<LooseResponse<T, S>> delete<T extends DocumentShell<S>, S, R extends QueryFields>(Documenter<T, S, R> document, {List<String> idPath = const []}) async {
-    var pathEnd = '${document.location.path}/${document.location.name}';
-    final ancestorCount = pathEnd.split(dynamicNameToken).length - 1;    
+  Future<LooseResponse<T, S>>
+      delete<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const []}) async {
+    var workingPath = '${document.location.path}/${document.location.name}';
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
-      throw LooseException('${idPath.length} document ids were provided. $ancestorCount required in $pathEnd');
+      throw LooseException(
+          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
     }
-    for (final x in idPath) {
-      pathEnd = pathEnd.replaceFirst(dynamicNameToken, x);
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
-    
+
     if (_client == null) {
       await _createClient();
     }
-    final f = fs.FirestoreApi(_client);
-    await f.projects.databases.documents.delete(
-      '${_database.rootPath}${pathEnd}'
-    );
+    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+    final res = await _client.post(uri);
     return LooseResponse.single(DocumentShell.empty as T, true);
   }
-  
+
   // 409 Already exists
-  Future<LooseResponse<T, S>> query<T extends DocumentShell<S>, S, R extends QueryFields>(Query<T, S, R> query) async {
-    final rawBody = query.result;
-    final body = json.encode(rawBody);
-    print(body);
+  Future<LooseResponse<T, S>>
+      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Query<T, S, R> query) async {
+    final rawBody = query.encode;
+    final reqBody = json.encode(rawBody);
+    print(reqBody);
     if (_client == null) {
       await _createClient();
     }
-    http.Response resp;
+
+    final uri = Uri.https(authority,
+        '${_database.rootPath}${query.document.location.pathToCollection}:runQuery');
+
+    var resBody = '';
     try {
-      resp = await _client.post('https://firestore.googleapis.com/v1/${_database.rootPath}${query.document.location.pathToCollection}:runQuery', body: body);
+      final resp = await _client.post(uri, body: reqBody);
+      resBody = resp.body;
     } catch (e) {
       return LooseResponse.list(const [], false, 1);
     }
-    
-    final decoded = json.decode(resp.body);
+
+    final decoded = json.decode(resBody);
     print(decoded);
     if (!((decoded as List)[0] as Map).containsKey('document')) {
       return LooseResponse.list(const [], true);
     }
-    return LooseResponse.list((decoded as List).map((e) {
-      final doc = fs.Document.fromJson((e as Map)['document'] as Map);
-      // print(doc.toJson());
-      return query.document.fromFirestore(doc.fields, doc.name, doc.createTime, doc.updateTime);
-    }).toList(), true);
+    return LooseResponse.list(
+        (decoded as List).map((e) {
+          final doc = (e as Map)['document'] as Map;
+          // print(doc.toJson());
+          return query.document.fromFirestore(
+              doc['fields'] as Map<String, Object>,
+              doc['name'] as String,
+              doc['createTime'] as String,
+              doc['updateTime'] as String);
+        }).toList(),
+        true);
   }
 
   void done() {
     _client.close();
   }
 }
-

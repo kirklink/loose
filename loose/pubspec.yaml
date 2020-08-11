@@ -6,7 +6,7 @@ environment:
   sdk: '>=2.8.0 <3.0.0'
 dependencies:
   recase: '^3.0.0'
-  googleapis: ^0.55.0
+  # googleapis: ^0.55.0
   googleapis_auth: ^0.2.12
   http: ^0.12.2
   path: ^1.7.0
