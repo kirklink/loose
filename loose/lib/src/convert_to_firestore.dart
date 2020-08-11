@@ -9,9 +9,9 @@ class ToFs {
 
   static const _toNullValue = {'nullValue': 'NULL_VALUE'};
 
-  static Map<String, Object> string(String string, {String defaultValue = '', bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> string(String string, String name, {String defaultValue = '', bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (string != null) {
       return {'stringValue': string};
@@ -20,13 +20,13 @@ class ToFs {
     } else if (useDefaultValue) {
       return {'stringValue': defaultValue};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> integer(int integer, {int defaultValue = 0, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> integer(int integer, String name, {int defaultValue = 0, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (integer!= null) {
       return {'integerValue': integer.toString()};
@@ -35,13 +35,13 @@ class ToFs {
     } else if (useDefaultValue) {
       return {'integerValue': defaultValue.toString()};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> float(double float, {double defaultValue = 0.0, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> float(double float, String name, {double defaultValue = 0.0, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (float != null) {
       return {'doubleValue': float};
@@ -50,13 +50,13 @@ class ToFs {
     } else if (useDefaultValue) {
       return {'doubleValue': defaultValue};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> boolean(bool boolean, {bool defaultValue = false, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> boolean(bool boolean, String name, {bool defaultValue = false, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (bool != null) {
       return {'booleanValue': boolean};
@@ -65,13 +65,13 @@ class ToFs {
     } else if (useDefaultValue) {
       return {'booleanValue': defaultValue};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> datetime(DateTime datetime, {DateTime defaultValue, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> datetime(DateTime datetime, String name, {DateTime defaultValue, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (datetime != null) {
       return {'timestampValue': datetime.toIso8601String()};
@@ -81,13 +81,13 @@ class ToFs {
       defaultValue ??= DateTime(0);
       return {'timestampValue': defaultValue};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> reference(Reference reference, {Reference defaultValue, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> reference(Reference reference, String name, {Reference defaultValue, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (integer!= null) {
       return {'referenceValue': reference.toString()};
@@ -97,13 +97,13 @@ class ToFs {
       final def = defaultValue != null ? defaultValue.toString() : '';
       return {'referenceValue': def};
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> list(List<Map<String, Object>> values, {List<Map<String, Object>> defaultValue = const [], bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> list(List<Map<String, Object>> values, String name, {List<Map<String, Object>> defaultValue = const [], bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (values != null) {
       return {
@@ -120,13 +120,13 @@ class ToFs {
         }
       };
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
-  static Map<String, Object> map(Map<String, Object> fields, {Map<String, Object> defaultValue = const {}, bool useDefaultValue = false, bool allowNull = false}) {
+  static Map<String, Object> map(Map<String, Object> fields, String name, {Map<String, Object> defaultValue = const {}, bool useDefaultValue = false, bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
-      throw LooseException('Cannot allow null and use default value. Must only use one or neither.');
+      throw LooseException('Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (fields != null) {
       return {
@@ -143,7 +143,7 @@ class ToFs {
         }
       };
     } else {
-      throw LooseException('Null provided but not allowed.');
+      throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
