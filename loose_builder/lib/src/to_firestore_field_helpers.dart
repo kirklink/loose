@@ -69,7 +69,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
 
     var inheritedName = name;
     if (parent.isNotEmpty) {
-      inheritedName = '$parent.$name';
+      inheritedName = '$parent?.$name';
     }
     
     String mode = '';
@@ -79,17 +79,17 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       mode = ', allowNull: true';
     }
     if (field.type.isDartCoreString) {
-      classBuffer.writeln("...{'$name' : ToFs.string(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.string(e?.$inheritedName$mode)},");
     } else if (field.type.isDartCoreInt) {
-      classBuffer.writeln("...{'$name' : ToFs.integer(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.integer(e?.$inheritedName$mode)},");
     } else if (field.type.isDartCoreDouble) {
-      classBuffer.writeln("...{'$name' : ToFs.float(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.float(e?.$inheritedName$mode)},");
     } else if (field.type.isDartCoreBool) {
-      classBuffer.writeln("...{'$name' : ToFs.boolean(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.boolean(e?.$inheritedName$mode)},");
     } else if (field.type.getDisplayString() == 'DateTime') {
-      classBuffer.writeln("...{'$name' : ToFs.datetime(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.datetime(e?.$inheritedName$mode)},");
     } else if (field.type.getDisplayString() == 'Reference') {
-      classBuffer.writeln("...{'$name' : ToFs.reference(e.$inheritedName$mode)},");
+      classBuffer.writeln("...{'$name' : ToFs.reference(e?.$inheritedName$mode)},");
     // Class
     } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)
       || _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
@@ -114,19 +114,19 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       }
       final elementType = elementTypes.first;
       final listBuf = StringBuffer();
-      listBuf.write("...{'$name' : ToFs.list(e.$inheritedName.map((e) => ");
+      listBuf.write("...{'$name' : ToFs.list(e?.$inheritedName?.map((e) => ");
       if (elementType.isDartCoreString) {
-        listBuf.write('ToFs.string(e$mode)');
+        listBuf.write('ToFs.string(e)');
       } else if (elementType.isDartCoreInt) {
-        listBuf.write('ToFs.integer(e$mode)');
+        listBuf.write('ToFs.integer(e)');
       } else if (elementType.isDartCoreDouble) {
-        listBuf.write('ToFs.float(e$mode)');
+        listBuf.write('ToFs.float(e)');
       } else if (elementType.isDartCoreBool) {
-        listBuf.write('ToFs.boolean(e$mode)');
+        listBuf.write('ToFs.boolean(e)');
       } else if (elementType.getDisplayString() == 'DateTime') {
-        listBuf.write('ToFs.datetime(e$mode)');
+        listBuf.write('ToFs.datetime(e)');
       } else if (elementType.getDisplayString() == 'Reference') {
-        listBuf.write('ToFs.reference(e$mode)');
+        listBuf.write('ToFs.reference(e)');
       } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element)
       || _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
       if (elementType.element is! ClassElement) {
@@ -134,7 +134,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       }
         listBuf.write("ToFs.map(${convertToFirestore(elementType.element, recase, globalAllowNull, globalUseDefaultValues)}$mode)");
       }
-      listBuf.write(").toList())},");
+      listBuf.write(")?.toList()$mode)},");
       classBuffer.writeln(listBuf.toString());
     
     }
