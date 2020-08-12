@@ -15,15 +15,15 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull, [String parent = '', int nestLevel = 0]) {
+String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNulls, bool globalReadonlyNulls, [String parent = '', int nestLevel = 0]) {
   
   final classBuffer = StringBuffer();
   
   for (final field in clazz.fields) {
 
-    var name = field.name;
-    name = recaseFieldName(recase, name);
-    var allowNull = globalAllowNull;
+    var dbname = field.name;
+    dbname = recaseFieldName(recase, dbname);
+    var allowNull = globalAllowNulls || globalReadonlyNulls;
 
     if (_checkForLooseField.hasAnnotationOfExact(field)) {
       final reader = ConstantReader(_checkForLooseField.firstAnnotationOf(field));
@@ -39,24 +39,37 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
       
       final rename = reader.peek('name')?.stringValue ?? '';
       if (rename.isNotEmpty) {
-        name = rename;
+        dbname = rename;
       }
       final readNull = reader.peek('readNulls')?.boolValue;
-      allowNull = (reader.peek('allowNull')?.boolValue ?? readNull) ?? globalAllowNull;
+      allowNull = (reader.peek('allowNull')?.boolValue ?? readNull) ?? globalAllowNulls;
+    }
+    
+    String displayName;
+    if (parent.isEmpty) {
+      displayName = '${field.name}';
+    } else {
+      displayName = '$parent.${field.name}';
+    }
+    
+
+    String mode = '';
+    if (allowNull) {
+      mode = ', allowNull: true';
     }
 
     if (field.type.isDartCoreString) {
-      classBuffer.writeln("..${field.name} = FromFs.string(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.string(m['${dbname}'], name: '${displayName}'$mode)");
     } else if (field.type.isDartCoreInt) {
-      classBuffer.writeln("..${field.name} = FromFs.integer(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.integer(m['${dbname}'], name: '${displayName}'$mode)");
     } else if (field.type.isDartCoreDouble) {
-      classBuffer.writeln("..${field.name} = FromFs.float(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.float(m['${dbname}'], name: '${displayName}'$mode)");
     } else if (field.type.isDartCoreBool) {
-      classBuffer.writeln("..${field.name} = FromFs.boolean(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)");
     } else if (field.type.getDisplayString() == 'DateTime') {
-      classBuffer.writeln("..${field.name} = FromFs.datetime(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)");
     } else if (field.type.getDisplayString() == 'Reference') {
-      classBuffer.writeln("..${field.name} = FromFs.reference(m['${field.name}'])");
+      classBuffer.writeln("..${field.name} = FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)");
     
     // Map
     } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)
@@ -64,10 +77,29 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
       if (field.type.element is! ClassElement) {
         throw LooseBuilderException('LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
       }
+
+      var childAllowNulls = false;
+      var childReadonlyNulls = false;
+      if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+        final reader = ConstantReader(_checkForLooseDocument.firstAnnotationOf(field.type.element));
+        final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+        final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
+        childAllowNulls = thisAllowNulls ? true : allowNull;
+        childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+      }
+
+      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+        final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
+        final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+        final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
+        childAllowNulls = thisAllowNulls ? true : allowNull;
+        childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+      }
+
       final mapBuf = StringBuffer();
-      mapBuf.writeln("..${field.name} = FromFs.map(m['${field.name}'], (m) => ${field.type.getDisplayString()}()");
-      mapBuf.writeln('${convertFromFirestore(field.type.element, recase, globalAllowNull)}');
-      mapBuf.writeln(')');
+      mapBuf.writeln("..${field.name} = FromFs.map(m['${dbname}'], (m) => ${field.type.getDisplayString()}()");
+      mapBuf.writeln('${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, displayName)}');
+      mapBuf.writeln(", name: '${displayName}'$mode)");
       classBuffer.write(mapBuf.toString());
     
     // List
@@ -86,26 +118,44 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
       final listBuf = StringBuffer();
       listBuf.write("..${field.name} = FromFs.list(m['${field.name}'], ");
       if (elementType.isDartCoreString) {
-        listBuf.write('(e) => FromFs.string(e)');
+        listBuf.write('(e) => FromFs.string(e, allowNull: true)');
       } else if (elementType.isDartCoreInt) {
-        listBuf.write('(e) => FromFs.integer(e)');
+        listBuf.write('(e) => FromFs.integer(e, allowNull: true)');
       } else if (elementType.isDartCoreDouble) {
-        listBuf.write('(e) => FromFs.float(e)');
+        listBuf.write('(e) => FromFs.float(e, allowNull: true)');
       } else if (elementType.isDartCoreBool) {
-        listBuf.write('(e) => FromFs.boolean(e)');
+        listBuf.write('(e) => FromFs.boolean(e, allowNull: true)');
       } else if (elementType.getDisplayString() == 'DateTime') {
-        listBuf.write('(e) => FromFs.datetime(e)');
+        listBuf.write('(e) => FromFs.datetime(e, allowNull: true)');
       } else if (elementType.getDisplayString() == 'Reference') {
-        listBuf.write('(e) => FromFs.reference(e)');
+        listBuf.write('(e) => FromFs.reference(e, allowNull: true)');
       } else if (_checkForLooseMap.hasAnnotationOfExact(elementType.element)
         || _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
         if (elementType.element is! ClassElement) {
           throw LooseBuilderException('LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
         }
 
+        var childAllowNulls = false;
+        var childReadonlyNulls = false;
+        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+          final reader = ConstantReader(_checkForLooseDocument.firstAnnotationOf(field.type.element));
+          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+          final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
+          childAllowNulls = thisAllowNulls ? true : allowNull;
+          childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+        }
+
+        if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+          final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
+          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+          final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
+          childAllowNulls = thisAllowNulls ? true : allowNull;
+          childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+        }
+
         listBuf.write("(e) => FromFs.map(e, (m) => ${elementType.getDisplayString()}()");
-        listBuf.writeln('${convertFromFirestore(elementType.element, recase, globalAllowNull)}');
-        listBuf.write(')');
+        listBuf.writeln('${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls)}');
+        listBuf.write(", name: '${displayName}'$mode)");
       }
       listBuf.writeln(')');
       classBuffer.writeln(listBuf.toString());

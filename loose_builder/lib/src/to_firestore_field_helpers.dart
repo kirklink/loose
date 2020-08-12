@@ -103,6 +103,12 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
         nestLevel = nestLevel + 1;
       }
+      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+        final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
+        final allowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+        final useDefaultValues = reader.peek('useDefaultValues')?.boolValue ?? false;
+        final readonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
+      }
       classBuffer.write("...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalAllowNull, globalUseDefaultValues, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
     // List
     } else if (field.type.isDartCoreList) {

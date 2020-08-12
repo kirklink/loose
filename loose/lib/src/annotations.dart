@@ -10,14 +10,17 @@ import 'package:loose/src/document.dart';
 class LooseDocument {
   final Case useCase;
   final Document document;
-  final bool allowNull;
+  final bool allowNulls;
   final bool useDefaultValues;
+  final bool readonlyNulls;
   const LooseDocument(this.document, {
     this.useCase = Case.none,
-    this.allowNull = false,
-    this.useDefaultValues = false
+    this.allowNulls = false,
+    this.useDefaultValues = false,
+    this.readonlyNulls = false,
   });
 }
+
 
 /// The annotation to enhance a Dart class property into a Firebase document field.
 ///
@@ -36,6 +39,7 @@ class LooseField {
   final bool allowNull;
   final bool canQuery;
   final bool useDefaultValue;
+  final bool readonlyNull;
   final bool ignoreIfNested;
   const LooseField({
     this.name = '',
@@ -44,11 +48,25 @@ class LooseField {
     this.allowNull,
     this.canQuery = false,
     this.useDefaultValue,
+    this.readonlyNull,
     this.ignoreIfNested
     });
 }
 
 
 class LooseMap {
-  const LooseMap();
+  final bool allowNulls;
+  final bool useDefaultValues;
+  final bool readonlyNulls;
+  
+  const LooseMap({
+    this.allowNulls = false,
+    this.useDefaultValues = false,
+    this.readonlyNulls = false
+  });
+
 }
+
+// class LooseReference {
+//   const LooseReference();
+// }

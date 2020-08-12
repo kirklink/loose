@@ -37,11 +37,13 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     recase = annotation.peek('useCase')?.objectValue?.getField('pascalCase')?.toIntValue() ?? recase;
     recase = annotation.peek('useCase')?.objectValue?.getField('kebabCase')?.toIntValue() ?? recase;
 
-    final allowNull = annotation.peek('allowNull')?.boolValue ?? false;
+    final allowNulls = annotation.peek('allowNulls')?.boolValue ?? false;
 
     final useDefaultValues = annotation.peek('useDefaultValues')?.boolValue ?? false;
 
-    if (allowNull && useDefaultValues) {
+    final readonlyNulls = annotation.peek('readonlyNulls')?.boolValue ?? false;
+
+    if (allowNulls && useDefaultValues) {
       throw LooseBuilderException('allowNull and useDefaultValues should not be used together on ${element.name}.');
     }
     
@@ -89,7 +91,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('$documentName fromFirestore(Map<String, Object> m, String name, String createTime, String updateTime) {');
     classBuf.write('final e = $className()');
     // fromFields
-    classBuf.writeln(convertFromFirestore(element, recase, allowNull));
+    classBuf.writeln(convertFromFirestore(element, recase, allowNulls, readonlyNulls));
 
     classBuf.writeln(';');
 
@@ -102,7 +104,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('final e = entity;');
     classBuf.write("return {'fields': ");
     // toFields
-    final converted = convertToFirestore(element, recase, allowNull, useDefaultValues);     
+    final converted = convertToFirestore(element, recase, allowNulls, useDefaultValues);     
     classBuf.writeln(converted);
     classBuf.writeln('};}');
     // !toFields
