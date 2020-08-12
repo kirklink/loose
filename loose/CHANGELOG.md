@@ -45,3 +45,6 @@
 
 ## 0.0.15
 - Update queries for REST wrapper
+
+## 0.0.16
+- Update handling nulls for new internals

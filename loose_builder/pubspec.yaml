@@ -1,13 +1,13 @@
 name: loose_builder
 homepage: "https://github.com/kirklink/loose"
 description: "Library for working with Google Cloud Firestore. This is the code generator."
-version: 0.0.15
+version: 0.0.16
 environment:
   sdk: '>=2.8.0 <3.0.0'
 dependencies:
-  # loose: ^0.0.15
-  loose:
-    path: ../loose
+  loose: ^0.0.16
+  # loose:
+  #   path: ../loose
   source_gen: ^0.9.0
   build: ^1.2.2
   analyzer: ^0.39.0
