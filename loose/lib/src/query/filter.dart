@@ -1,9 +1,8 @@
-import 'package:googleapis/firestore/v1.dart' as fs;
-
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query_field.dart';
 import 'package:loose/src/query/query_enums.dart';
 import 'package:loose/src/query/query_enum_converters.dart';
+
 
 abstract class BaseFilter {
   final String _op;
@@ -58,7 +57,6 @@ class Filter<T> extends BaseFilter {
     _unaryOp = true;
   }
   
-
   Filter.list(this._field, ListOp op, List<T> comparables) : super(convertListOperator(op)) {
     if (comparables.length > 10) {
       throw LooseException('The comparables list cannot contain more than 10 elements.');
@@ -103,20 +101,3 @@ class Filter<T> extends BaseFilter {
     
   }
 }
-
-// class Unary extends BaseFilter {
-  
-//   final QueryField _field;
-  
-//   Unary(this._field, UnaryOp op) : super (convertUnaryOperator(op));
-
-//   @override
-//   Map<String, Object> get result {
-//     return {
-//       'unaryFilter': {
-//         'field': _field.result,
-//         'op': super._op
-//       }
-//     };
-//   }
-// }

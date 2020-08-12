@@ -39,3 +39,6 @@
 
 ## 0.0.13
 - Handled nested values using default values
+
+## 0.0.14
+- Reworked internals to wrap REST api instead of googleapis

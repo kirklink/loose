@@ -1,4 +1,3 @@
-import 'package:googleapis/firestore/v1.dart' as fs;
 import 'package:loose/annotations.dart';
 import 'package:loose/src/document_info.dart';
 

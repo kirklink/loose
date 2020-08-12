@@ -19,18 +19,6 @@ class LooseDocument {
   });
 }
 
-// /// The annotation to convert a Dart class into a Firebase document.
-// ///
-// /// [name]: rename the Firestore document to correspond with a database table name.
-// /// [useCase]: automatically convert the table name and field names to another case, unless
-// /// the field is annotated explicitly with a 'name' parameter.
-// /// [readOnly]: Throws a LooseException if tried to write to the database.
-// class LooseCollection {
-//   final Resource heritage;
-//   const LooseCollection(this.heritage);
-// }
-
-
 /// The annotation to enhance a Dart class property into a Firebase document field.
 ///
 /// [LooseField] is not required and only necessary if additional annotations are required
@@ -48,7 +36,6 @@ class LooseField {
   final bool allowNull;
   final bool canQuery;
   final bool useDefaultValue;
-  final bool readNulls;
   final bool ignoreIfNested;
   const LooseField({
     this.name = '',
@@ -57,7 +44,6 @@ class LooseField {
     this.allowNull,
     this.canQuery = false,
     this.useDefaultValue,
-    this.readNulls,
     this.ignoreIfNested
     });
 }
@@ -66,7 +52,3 @@ class LooseField {
 class LooseMap {
   const LooseMap();
 }
-
-// class LooseReference {
-//   const LooseReference();
-// }

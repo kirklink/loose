@@ -44,12 +44,9 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     if (allowNull && useDefaultValues) {
       throw LooseBuilderException('allowNull and useDefaultValues should not be used together on ${element.name}.');
     }
-
-    
     
     
     var name = annotation.peek('document').peek('name').stringValue;
-    // print('name: $name');
     var parent = annotation.peek('document').peek('parent');
     var collection = parent.peek('name').stringValue;
 

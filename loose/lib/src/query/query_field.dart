@@ -1,7 +1,5 @@
-import 'package:googleapis/androidmanagement/v1.dart';
 import 'package:loose/src/reference.dart';
 import 'package:loose/src/query/field_reference.dart';
-import 'package:googleapis/firestore/v1.dart' as fs;
 
 abstract class QueryField<T> {
   FieldReference _field;
