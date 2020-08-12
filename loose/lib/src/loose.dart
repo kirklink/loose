@@ -73,41 +73,8 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-  Future<LooseResponse<T, S>>
-      read<T extends DocumentShell<S>, S, R extends QueryFields>(
-          Documenter<T, S, R> document,
-          {List<String> idPath = const []}) async {
-    var workingPath = '${document.location.path}/${document.location.name}';
 
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-
-    if (_client == null) {
-      await _createClient();
-    }
-
-    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
-
-    final res = await _client.post(uri);
-    if (res.statusCode == 409) {
-      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.documentExists);
-    }
-
-    final resBody = json.decode(res.body);
-    final shell = document.fromFirestore(
-        resBody['fields'] as Map<String, Object>,
-        resBody['name'] as String,
-        resBody['createTime'] as String,
-        resBody['updateTime'] as String);
-    return LooseResponse.single(shell);
-  }
-
+  // CREATE
   Future<LooseResponse<T, S>>
       create<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
@@ -147,6 +114,9 @@ class Loose {
 
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+    }
 
     final resBody = json.decode(res.body) as Map<String, Object>;
 
@@ -158,6 +128,47 @@ class Loose {
     return LooseResponse.single(shell);
   }
 
+
+  // READ
+  Future<LooseResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const []}) async {
+    var workingPath = '${document.location.path}/${document.location.name}';
+
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
+    if (ancestorCount != idPath.length) {
+      throw LooseException(
+          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
+    }
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
+    }
+
+    if (_client == null) {
+      await _createClient();
+    }
+
+    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+
+    final res = await _client.post(uri);
+    if (res.statusCode == 409) {
+      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.documentExists);
+    }
+
+    final resBody = json.decode(res.body);
+    final shell = document.fromFirestore(
+        resBody['fields'] as Map<String, Object>,
+        resBody['name'] as String,
+        resBody['createTime'] as String,
+        resBody['updateTime'] as String);
+    return LooseResponse.single(shell);
+  }
+
+
+  
+
+  // UPDATE
   Future<LooseResponse<T, S>>
       update<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
@@ -180,6 +191,9 @@ class Loose {
         Uri.https(authority, '${_database.rootPath}${document.location.path}');
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+    }
 
     final resBody = json.decode(res.body);
     final shell = document.fromFirestore(
@@ -190,6 +204,7 @@ class Loose {
     return LooseResponse.single(shell);
   }
 
+  // DELETE
   Future<LooseResponse<T, S>>
       delete<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
@@ -209,10 +224,14 @@ class Loose {
     }
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+    }
     return LooseResponse.single(DocumentShell.empty as T);
   }
 
 
+  // QUERY
   Future<LooseResponse<T, S>>
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
           Query<T, S, R> query) async {

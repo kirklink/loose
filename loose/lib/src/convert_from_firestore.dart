@@ -64,7 +64,6 @@ class FromFs {
   static T map<T>(Map<String, Object> value, MapDecoder<T> mapDecoder) {
     if (value.containsKey('mapValue')) {
       final valueMap = (value['mapValue'] as Map<String, Object>)['fields'] as Map<String, Object>;
-      print('VALUEMAP: $valueMap');
       return mapDecoder(valueMap);
     }
     return null;
