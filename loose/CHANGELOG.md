@@ -42,3 +42,6 @@
 
 ## 0.0.14
 - Reworked internals to wrap REST api instead of googleapis
+
+## 0.0.15
+- Update queries for REST wrapper

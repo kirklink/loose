@@ -118,17 +118,17 @@ String convertToQueryField(FieldElement field, int recase, [List<String> fieldPa
     var buf = StringBuffer();
     buf.write("final $fieldName = ArrayField('$dbName', ");
     if (elementType.isDartCoreString) {
-      buf.write('(String e) => Value()..stringValue = e');
+      buf.write("(String e) => {'stringValue': e}");
     } else if (elementType.isDartCoreInt) {
-      buf.write('(int e) => Value()..integerValue = e.toString()');
+      buf.write("(int e) => {'integerValue': e.toString()}");
     } else if (elementType.isDartCoreDouble) {
-      buf.write('(double e) => Value()..doubleValue = e');
+      buf.write("(double e) => {'doubleValue': e}");
     } else if (elementType.isDartCoreBool) {
-      buf.write('(bool e) => Value()..booleanValue = e');
+      buf.write("(bool e) => {'booleanValue': e}");
     } else if (elementType.getDisplayString() == 'DateTime') {
-      buf.write('(DateTime e) => Value()..timestampValue = e.toIso8601String()');
+      buf.write("(DateTime e) => {'timestampValue': e.toIso8601String()}");
     } else if (elementType.getDisplayString() == 'Reference') {
-      buf.write('(Reference e) => Value()..referenceValue = e.toString()');
+      buf.write("(Reference e) => {'referenceValue': e.toString()}");
     }
     buf.write(");");
     return buf.toString();
