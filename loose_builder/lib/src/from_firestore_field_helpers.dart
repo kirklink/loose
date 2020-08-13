@@ -15,7 +15,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNulls, bool globalReadonlyNulls, {String parent = '', int nestLevel = 0}) {
+String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNulls, bool globalReadonlyNulls, {String parent = '', int nestLevel = 0, bool inList = false}) {
   
   final classBuffer = StringBuffer();
   
@@ -34,6 +34,10 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
       }
       
       if ((reader.peek('ignoreIfNested')?.boolValue ?? false) && nestLevel > 0) {
+        continue;
+      }
+
+      if ((reader.peek('ignoreInLists')?.boolValue ?? false) && inList) {
         continue;
       }
       
@@ -144,7 +148,6 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
           final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
           childAllowNulls = thisAllowNulls ? true : allowNull;
           childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
-          nestLevel = nestLevel + 1;
         }
 
         if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
@@ -156,7 +159,7 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
         }
 
         listBuf.write("(e) => FromFs.map(e, (m) => ${elementType.getDisplayString()}()");
-        listBuf.writeln('${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: nestLevel)}');
+        listBuf.writeln('${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: 0, inList: true)}');
         listBuf.write(", name: '${displayName}'$mode)");
       }
       listBuf.writeln(')');

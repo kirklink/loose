@@ -41,6 +41,7 @@ class LooseField {
   final bool useDefaultValue;
   final bool readonlyNull;
   final bool ignoreIfNested;
+  final bool ignoreInLists;
   const LooseField({
     this.name = '',
     this.readOnly = false,
@@ -49,7 +50,8 @@ class LooseField {
     this.canQuery = false,
     this.useDefaultValue,
     this.readonlyNull,
-    this.ignoreIfNested
+    this.ignoreIfNested,
+    this.ignoreInLists
     });
 }
 

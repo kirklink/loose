@@ -15,7 +15,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, bool globalUseDefaultValues, {String parent = '', bool parentAllowNull = false, int nestLevel = 0}) {
+String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, bool globalUseDefaultValues, {String parent = '', bool parentAllowNull = false, int nestLevel = 0, bool inList = false}) {
 
   final classBuffer = StringBuffer();
   classBuffer.writeln('{');
@@ -43,6 +43,10 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       }
 
       if ((reader.peek('ignoreIfNested')?.boolValue ?? false) && nestLevel > 0) {
+        continue;
+      }
+
+      if ((reader.peek('ignoreInLists')?.boolValue ?? false) && inList) {
         continue;
       }
 
@@ -172,7 +176,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
           childAllowNulls = thisAllowNulls ? true : allowNull;
           childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
         }
-        listBuf.write("ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, nestLevel: 0)}, '$inheritedNameDisplay'$mode)");
+        listBuf.write("ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
       }
       listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
       classBuffer.writeln(listBuf.toString());

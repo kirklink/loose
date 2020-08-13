@@ -51,3 +51,6 @@
 
 ## 0.0.17
 - Update handling ignoreIfNested on fields for new internals to allow greater reuse of document classes
+
+## 0.0.18
+- Add handling ignoreInLists for fields nested withing lists.
