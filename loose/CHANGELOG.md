@@ -54,3 +54,6 @@
 
 ## 0.0.18
 - Add handling ignoreInLists for fields nested withing lists.
+
+## 0.0.19
+- Include superclass fields to allow extending from abstract classes

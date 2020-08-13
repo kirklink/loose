@@ -25,7 +25,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
       var buf = StringBuffer();
       var documentClass = "${element.name}Document";
       buf.writeln(
-          '\nThe LooseDocuement class "${element.name}" must have a final static field "\$table".');
+          '\nThe LooseDocuement class "${element.name}" must have a final static field "\$firestore".');
       buf.writeln(
           'Add this to ${element.name}: static final \$firestore = _\$$documentClass();');
       throw LooseBuilderException(buf.toString());
