@@ -15,7 +15,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNulls, bool globalReadonlyNulls, [String parent = '', int nestLevel = 0]) {
+String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNulls, bool globalReadonlyNulls, {String parent = '', int nestLevel = 0}) {
   
   final classBuffer = StringBuffer();
   
@@ -86,6 +86,7 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
         final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
         childAllowNulls = thisAllowNulls ? true : allowNull;
         childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+        nestLevel = nestLevel + 1;
       }
 
       if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
@@ -98,7 +99,7 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
 
       final mapBuf = StringBuffer();
       mapBuf.writeln("..${field.name} = FromFs.map(m['${dbname}'], (m) => ${field.type.getDisplayString()}()");
-      mapBuf.writeln('${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, displayName)}');
+      mapBuf.writeln('${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, parent: displayName, nestLevel: nestLevel)}');
       mapBuf.writeln(", name: '${displayName}'$mode)");
       classBuffer.write(mapBuf.toString());
     
@@ -143,6 +144,7 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
           final thisReadonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
           childAllowNulls = thisAllowNulls ? true : allowNull;
           childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+          nestLevel = nestLevel + 1;
         }
 
         if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
@@ -154,7 +156,7 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
         }
 
         listBuf.write("(e) => FromFs.map(e, (m) => ${elementType.getDisplayString()}()");
-        listBuf.writeln('${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls)}');
+        listBuf.writeln('${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: nestLevel)}');
         listBuf.write(", name: '${displayName}'$mode)");
       }
       listBuf.writeln(')');

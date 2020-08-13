@@ -100,16 +100,29 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       if (field.type.element is! ClassElement) {
         throw LooseBuilderException('LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
       }
+      
+      var childAllowNulls = false;
+      var childUseDefaultValues = false;
+      if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+        final reader = ConstantReader(_checkForLooseDocument.firstAnnotationOf(field.type.element));
+        final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+        final thisUseDefaultValue = reader.peek('useDefaultValue')?.boolValue ?? false;
+        childAllowNulls = thisAllowNulls ? true : allowNull;
+        childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
+        nestLevel = nestLevel + 1;
+      }
+
+      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+        final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
+        final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+        final thisUseDefaultValue = reader.peek('useDefaultValue')?.boolValue ?? false;
+        childAllowNulls = thisAllowNulls ? true : allowNull;
+        childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
+      }
       if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
         nestLevel = nestLevel + 1;
       }
-      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-        final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
-        final allowNulls = reader.peek('allowNulls')?.boolValue ?? false;
-        final useDefaultValues = reader.peek('useDefaultValues')?.boolValue ?? false;
-        final readonlyNulls = reader.peek('readonlyNulls')?.boolValue ?? false;
-      }
-      classBuffer.write("...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalAllowNull, globalUseDefaultValues, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+      classBuffer.write("...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, childAllowNulls, childUseDefaultValues, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
     // List
     } else if (field.type.isDartCoreList) {
       final elementTypes = _getGenericTypes(field.type);
@@ -142,7 +155,24 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       if (elementType.element is! ClassElement) {
         throw LooseBuilderException('LooseDocument or LooseMap must only annotate classes. Field elements "${elementType.getDisplayString()}" are not user defined classes.');
       }
-        listBuf.write("ToFs.map(${convertToFirestore(elementType.element, recase, globalAllowNull, globalUseDefaultValues)}, '$inheritedNameDisplay'$mode)");
+        var childAllowNulls = false;
+        var childUseDefaultValues = false;
+        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+          final reader = ConstantReader(_checkForLooseDocument.firstAnnotationOf(field.type.element));
+          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+          final thisUseDefaultValue = reader.peek('useDefaultValue')?.boolValue ?? false;
+          childAllowNulls = thisAllowNulls ? true : allowNull;
+          childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
+        }
+
+        if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+          final reader = ConstantReader(_checkForLooseMap.firstAnnotationOf(field.type.element));
+          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
+          final thisUseDefaultValue = reader.peek('useDefaultValue')?.boolValue ?? false;
+          childAllowNulls = thisAllowNulls ? true : allowNull;
+          childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
+        }
+        listBuf.write("ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, nestLevel: 0)}, '$inheritedNameDisplay'$mode)");
       }
       listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
       classBuffer.writeln(listBuf.toString());

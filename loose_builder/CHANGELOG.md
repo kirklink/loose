@@ -48,3 +48,6 @@
 
 ## 0.0.16
 - Update handling nulls for new internals
+
+## 0.0.17
+- Update handling ignoreIfNested on fields for new internals to allow greater reuse of document classes
