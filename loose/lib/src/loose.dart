@@ -115,7 +115,7 @@ class Loose {
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.apiCallFailed);
     }
 
     final resBody = json.decode(res.body) as Map<String, Object>;
@@ -192,7 +192,7 @@ class Loose {
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.apiCallFailed);
     }
 
     final resBody = json.decode(res.body);
@@ -225,7 +225,7 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.list(const [], LooseErrors.apiCallFailed);
+      return LooseResponse.single(DocumentShell.empty as T, LooseErrors.apiCallFailed);
     }
     return LooseResponse.single(DocumentShell.empty as T);
   }

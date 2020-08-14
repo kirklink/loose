@@ -60,3 +60,6 @@
 
 ## 0.0.20
 - Remove null bool in LooseResponse
+
+## 0.0.21
+- Fix returning list from single document operations
