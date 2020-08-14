@@ -63,3 +63,6 @@
 
 ## 0.0.21
 - Fix returning list from single document operations
+
+## 0.0.22
+- Can create empty DocumentShell

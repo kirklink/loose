@@ -39,7 +39,7 @@ class LooseResponse<T extends DocumentShell<S>, S> {
 
   LooseResponse.list(List<T> list, [this.error = LooseError.empty]) {
     _isList = true;
-    _shell = DocumentShell.empty<S>();
+    _shell = DocumentShell.empty as T;
     _shellList = list;
   }
 

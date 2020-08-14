@@ -20,7 +20,8 @@ class DocumentShell<T> {
   // const DocumentShell._empty(this._entity = null, );
 
   const DocumentShell._empty([this._entity, this._name = '', this._createTime = '', this._updateTime = '']);
-  static DocumentShell<T> empty<T>() => DocumentShell._empty();
+
+  static const DocumentShell empty = DocumentShell._empty();
 
   String get name => _name;
   String get id => _name.split('/').last;
@@ -31,5 +32,6 @@ class DocumentShell<T> {
     return (_entity == null) && _name.isEmpty && _createTime.isEmpty && _updateTime.isEmpty;
   }
   bool get isNotEmpty => !isEmpty;
+
 }
 
