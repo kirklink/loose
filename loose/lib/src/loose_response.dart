@@ -23,7 +23,7 @@ class LooseError {
 class LooseResponse<T extends DocumentShell<S>, S> {
   DocumentShell<S> _shell;
   List<T> _shellList;
-  bool _isList;
+  bool _isList = false;
   final LooseError error;
 
   bool get success => error.isEmpty;

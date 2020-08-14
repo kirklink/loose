@@ -57,3 +57,6 @@
 
 ## 0.0.19
 - Include superclass fields to allow extending from abstract classes
+
+## 0.0.20
+- Remove null bool in LooseResponse
