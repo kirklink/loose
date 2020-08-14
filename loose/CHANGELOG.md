@@ -66,3 +66,6 @@
 
 ## 0.0.22
 - Can create empty DocumentShell
+
+## 0.0.23
+- Better error handling if Firestore API call fails

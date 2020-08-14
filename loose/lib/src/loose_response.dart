@@ -24,23 +24,28 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   DocumentShell<S> _shell;
   List<T> _shellList;
   bool _isList = false;
-  final LooseError error;
+  LooseError _error;
 
-  bool get success => error.isEmpty;
+  bool get success => _error == null;
 
   int get count => !success ? 0 : !_isList ? 1 : _shellList.length;
 
   
-  LooseResponse.single(T shell, [this.error = LooseError.empty]) {
+  LooseResponse.single(T shell) {
     _isList = false;
     _shell = shell;
     _shellList = const [];
   }
 
-  LooseResponse.list(List<T> list, [this.error = LooseError.empty]) {
+  LooseResponse.list(List<T> list) {
     _isList = true;
-    _shell = DocumentShell.empty as T;
+    _shell = DocumentShell.empty();
     _shellList = list;
+  }
+
+  LooseResponse.fail(this._error) {
+    _shell = DocumentShell.empty();
+    _shellList = const [];
   }
 
   void _singleMethod() {
@@ -57,16 +62,25 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   
   S get entity {
     _singleMethod();
+    if (!success) {
+      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+    }
     return _shell.entity;
   }
 
   DocumentShell<S> get document {
     _singleMethod();
+    if (!success) {
+      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+    }
     return _shell;
   }
 
   List<T> get list {
     _listMethod();
+    if (!success) {
+      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+    }
     return _shellList;
   }
   

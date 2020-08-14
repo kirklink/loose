@@ -21,7 +21,7 @@ class DocumentShell<T> {
 
   const DocumentShell._empty([this._entity, this._name = '', this._createTime = '', this._updateTime = '']);
 
-  static const DocumentShell empty = DocumentShell._empty();
+  static DocumentShell<T> empty<T>() => DocumentShell._empty();
 
   String get name => _name;
   String get id => _name.split('/').last;
