@@ -69,3 +69,6 @@
 
 ## 0.0.23
 - Better error handling if Firestore API call fails
+
+## 0.0.24
+- Fixed crawling fields for main class
