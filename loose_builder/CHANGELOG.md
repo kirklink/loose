@@ -72,3 +72,6 @@
 
 ## 0.0.24
 - Fixed crawling fields for main class
+
+## 0.0.25
+- Avoid return null from read when document doesn't exist

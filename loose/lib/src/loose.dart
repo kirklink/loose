@@ -1,6 +1,7 @@
 import 'dart:convert' show json;
 
 import 'package:googleapis_auth/auth_io.dart' as auth;
+import 'package:loose/schema.dart';
 // import 'package:googleapis/firestore/v1.dart' as fs;
 
 import 'package:loose/src/loose_credentials.dart';
@@ -19,7 +20,7 @@ import 'package:loose/src/query/query.dart';
 
 abstract class LooseErrors {
   static const documentExists = LooseError(409, 'Document already exists');
-  // static const notFound = LooseError(1, 'Document not found');
+  static const notFound = LooseError(404, 'Document not found');
   static const apiCallFailed = LooseError(500, 'Call to Firestore failed.');
 }
 
@@ -114,8 +115,9 @@ class Loose {
 
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
+    
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.fail(LooseErrors.apiCallFailed);
+      return _singleEntityResponseFails<T, S>(res.statusCode);
     }
 
     final resBody = json.decode(res.body) as Map<String, Object>;
@@ -152,8 +154,9 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
 
     final res = await _client.post(uri);
-    if (res.statusCode == 409) {
-      return LooseResponse.fail(LooseErrors.documentExists);
+    
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return _singleEntityResponseFails<T, S>(res.statusCode);
     }
 
     final resBody = json.decode(res.body);
@@ -191,8 +194,9 @@ class Loose {
         Uri.https(authority, '${_database.rootPath}${document.location.path}');
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
+    
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.fail(LooseErrors.apiCallFailed);
+      return _singleEntityResponseFails<T, S>(res.statusCode);
     }
 
     final resBody = json.decode(res.body);
@@ -225,7 +229,7 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.fail(LooseErrors.apiCallFailed);
+      return _singleEntityResponseFails<T, S>(res.statusCode);
     }
     return LooseResponse.single(DocumentShell.empty as T);
   }
@@ -266,6 +270,16 @@ class Loose {
               doc['createTime'] as String,
               doc['updateTime'] as String);
         }).toList());
+  }
+
+  LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(int statusCode) {
+    switch (statusCode) {
+      case 409: return LooseResponse.fail(LooseErrors.documentExists);
+      break;
+      case 404: return LooseResponse.fail(LooseErrors.notFound);
+      break;
+      default: return LooseResponse.fail(LooseErrors.apiCallFailed);
+    }
   }
 
   void done() {
