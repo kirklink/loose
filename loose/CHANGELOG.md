@@ -3,7 +3,7 @@
 
 ## 0.0.26
 - Fix changelog :)
-
+- Expose response errors
 
 ## 0.0.25
 - Avoid return null from read when document doesn't exist

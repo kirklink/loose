@@ -26,9 +26,11 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   bool _isList = false;
   LooseError _error;
 
-  bool get success => _error == null;
+  bool get ok => _error == null;
+  String get error => _error.message;
+  int get errorCode => _error.code;
 
-  int get count => !success ? 0 : !_isList ? 1 : _shellList.length;
+  int get count => !ok ? 0 : !_isList ? 1 : _shellList.length;
 
   
   LooseResponse.single(T shell) {
@@ -62,7 +64,7 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   
   S get entity {
     _singleMethod();
-    if (!success) {
+    if (!ok) {
       throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
     }
     return _shell.entity;
@@ -70,7 +72,7 @@ class LooseResponse<T extends DocumentShell<S>, S> {
 
   DocumentShell<S> get document {
     _singleMethod();
-    if (!success) {
+    if (!ok) {
       throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
     }
     return _shell;
@@ -78,7 +80,7 @@ class LooseResponse<T extends DocumentShell<S>, S> {
 
   List<T> get list {
     _listMethod();
-    if (!success) {
+    if (!ok) {
       throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
     }
     return _shellList;
