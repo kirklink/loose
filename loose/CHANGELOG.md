@@ -1,6 +1,6 @@
 # Loose Builder Changelog
 
-## 0.0.2
+## 0.0.27
 - Fix get request to read documents directly from firestore api
 
 ## 0.0.26
