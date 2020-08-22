@@ -151,9 +151,10 @@ class Loose {
       await _createClient();
     }
 
+
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
 
-    final res = await _client.post(uri);
+    final res = await _client.get(uri);
     
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode);
