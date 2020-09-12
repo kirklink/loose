@@ -192,8 +192,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull, 
       
       }
     }
-    classBuffer.writeln('}');
-    // print(classBuffer);
-    return classBuffer.toString();
   }
+  classBuffer.writeln('}');
+  return classBuffer.toString();
 }

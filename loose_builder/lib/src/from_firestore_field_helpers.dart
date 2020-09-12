@@ -20,16 +20,18 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
   final classBuffer = StringBuffer();
 
   final classElements = <ClassElement>[];
-    classElements.add(clazz);
-    for (final superType in clazz.allSupertypes) {
-      if (superType.element is ClassElement) {
-        classElements.add(superType.element);
-      }
-    }
-  
+  classElements.add(clazz);
+  for (final superType in clazz.allSupertypes) {
+    classElements.add(superType.element);
+  }
+  // classElements.forEach((e) => print(e.displayName));
+  // for (final klass in classElements) {
+  //   for (final field in klass.fields) {
+  //     print('class: ${klass.type.getDisplayString()}');
+  //     print('field: $field');
+      
   for (final klass in classElements) {
     for (final field in klass.fields) {
-
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
@@ -177,9 +179,10 @@ String convertFromFirestore(ClassElement clazz, int recase, bool globalAllowNull
         }
         listBuf.writeln(')');
         classBuffer.writeln(listBuf.toString());
+        
       }
+      
     }
-    // print(classBuffer);
-    return classBuffer.toString();
   }
+  return classBuffer.toString();
 }

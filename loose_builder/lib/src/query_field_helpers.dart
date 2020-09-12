@@ -11,55 +11,81 @@ import 'package:loose_builder/src/recase_helper.dart';
 import 'package:loose_builder/src/loose_builder_exception.dart';
 import 'package:loose/annotations.dart';
 
+final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
 
-String createQueryFields(Element element, int recase, [
+String createQueryFields(ClassElement element, int recase, {
   List<String> classParents = const <String>[],
-  List<String> fieldParents = const <String>[]
-  ]) {
-  // QueryFields
+  List<String> fieldParents = const <String>[],
+  int nestLevel = 0
+  }) {
+
+    final pageBuf = StringBuffer();
     
+    final classElements = <ClassElement>[];
+    classElements.add(element);
+    for (final superType in element.allSupertypes) {
+      classElements.add(superType.element);
+    }
+    
+
     var className = '${element.name}';
     if (classParents.isNotEmpty) {
       className = "${classParents.join('__')}__$className";
     }
+
+    final privatePrefix = nestLevel == 0 ? '_' : '__';
+    
+    final qClassBuf = StringBuffer();
     final qFieldsBuf = StringBuffer();
-    qFieldsBuf.writeln('class _\$${className}Fields extends QueryFields {');
+    qClassBuf.writeln('class ${privatePrefix}\$${className}Fields extends QueryFields {');
     
-    final stash = <FieldElement>[];
-    
-    for (final field in (element as ClassElement).fields) {
-      if (field.isStatic) {
-        continue;
-      }
-      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-        if (field.type.element is! ClassElement) {
-          throw ('LooseMap must only annotate a class: ${field.type.element.getDisplayString(withNullability: null)}');
+    for (final klass in classElements) {
+      for (final field in klass.fields) {
+        if (field.isStatic || field.isSynthetic) {
+          continue;
         }
-        stash.add(field);
-        final childClass = field.type.element.name;
-        qFieldsBuf.writeln('final ${field.name} = _\$${className}__${childClass}Fields();');
-        continue;
-      }
-      final queryField = convertToQueryField(field, recase, fieldParents);
-      if (queryField.isNotEmpty) {
-        qFieldsBuf.writeln(queryField);  
+        if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
+        _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+          if (field.type.element is! ClassElement) {
+            throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.element.getDisplayString(withNullability: null)}');
+          }
+          // stash.add(field);
+          final nextClassParents = <String>[];
+          nextClassParents.addAll(classParents);
+          nextClassParents.add(element.name);
+          final nextFieldParents = <String>[];
+          nextFieldParents.addAll(fieldParents);
+          nextFieldParents.add(field.name);
+          final nextPage = createQueryFields(field.type.element, recase, classParents: nextClassParents, fieldParents: nextFieldParents, nestLevel: nestLevel + 1);
+          if (nextPage.isNotEmpty) {
+            final childClass = field.type.element.name;
+            qFieldsBuf.writeln('final ${field.name} = __\$${className}__${childClass}Fields();');
+            pageBuf.writeln(nextPage);
+          }
+        } else {
+          final queryField = convertToQueryField(field, recase, fieldParents);
+          if (queryField.isNotEmpty) {
+            qFieldsBuf.writeln(queryField);  
+          }
+        }
+        if (qFieldsBuf.isEmpty && nestLevel != 0) {
+          return '';
+        }
       }
     }
-    qFieldsBuf.writeln('}');
-    for (final field in stash) {
-      final nextClassParents = <String>[];
-      nextClassParents.addAll(classParents);
-      nextClassParents.add(element.name);
-      final nextFieldParents = <String>[];
-      nextFieldParents.addAll(fieldParents);
-      nextFieldParents.add(field.name);
-      qFieldsBuf.writeln(createQueryFields(field.type.element, recase, nextClassParents, nextFieldParents));
+    
+    if (qFieldsBuf.isEmpty && nestLevel != 0) {
+      return '';
+    }
+    qClassBuf.writeln(qFieldsBuf);
+    qClassBuf.writeln('}');
+    pageBuf.writeln(qClassBuf);
       
-    }
-    return qFieldsBuf.toString();
+    // print(pageBuf);
+    return pageBuf.toString();
 
 }
 
