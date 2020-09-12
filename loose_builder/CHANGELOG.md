@@ -1,5 +1,9 @@
 # Loose Builder Changelog
 
+## 0.0.28
+- Added canQuery to nested extended classes
+- Added limit and offset to queries
+
 ## 0.0.27
 - Fix get request to read documents directly from firestore api
 
