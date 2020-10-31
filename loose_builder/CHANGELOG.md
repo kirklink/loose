@@ -1,5 +1,8 @@
 # Loose Builder Changelog
 
+## 0.0.29
+- Fix empty filter handling
+
 ## 0.0.28
 - Added canQuery to nested extended classes
 - Added limit and offset to queries
