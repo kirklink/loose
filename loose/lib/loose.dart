@@ -5,3 +5,4 @@ export 'src/query/query.dart';
 export 'src/query/query_enums.dart';
 export 'src/query/filter.dart';
 export 'src/query/order.dart';
+export 'src/reference.dart';

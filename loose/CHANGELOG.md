@@ -1,5 +1,8 @@
 # Loose Builder Changelog
 
+## 0.0.30
+- Expose reference class
+
 ## 0.0.29
 - Fix empty filter handling
 
