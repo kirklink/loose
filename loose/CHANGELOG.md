@@ -1,5 +1,8 @@
 # Loose Builder Changelog
 
+## 0.0.31
+- Auto assign id when creating a document
+
 ## 0.0.30
 - Expose reference class
 

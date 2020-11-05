@@ -14,17 +14,11 @@ import 'package:loose/src/constants.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
-
-
-
-
 abstract class LooseErrors {
   static const documentExists = LooseError(409, 'Document already exists');
   static const notFound = LooseError(404, 'Document not found');
   static const apiCallFailed = LooseError(500, 'Call to Firestore failed.');
 }
-
-
 
 class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
@@ -74,24 +68,28 @@ class Loose {
     return Reference(document, _database, name);
   }
 
-
   // CREATE
   Future<LooseResponse<T, S>>
       create<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
-          {List<String> idPath = const []}) async {
-    if (document.location.name == dynamicNameToken && idPath.isEmpty) {
+          {List<String> idPath = const [],
+          bool autoAssignId = false}) async {
+    if (document.location.name == dynamicNameToken &&
+        idPath.isEmpty &&
+        !autoAssignId) {
       throw LooseException(
           'A name is required for this document but was not provided in idPath.');
     }
 
     var docId = '';
-    if (document.location.name == dynamicNameToken) {
+    if (document.location.name == dynamicNameToken && !autoAssignId) {
       docId = idPath.removeLast();
     }
 
     var workingPath = '${document.location.path}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
+    final adjustForProvidedId = autoAssignId ? 0 : 1;
+    final ancestorCount =
+        workingPath.split(dynamicNameToken).length - adjustForProvidedId;
     if (ancestorCount != idPath.length) {
       throw LooseException(
           '${idPath.length} ancestor ids were provided. $ancestorCount required in $workingPath');
@@ -115,7 +113,7 @@ class Loose {
 
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
-    
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode);
     }
@@ -129,7 +127,6 @@ class Loose {
         resBody['updateTime'] as String);
     return LooseResponse.single(shell);
   }
-
 
   // READ
   Future<LooseResponse<T, S>>
@@ -151,11 +148,10 @@ class Loose {
       await _createClient();
     }
 
-
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
 
     final res = await _client.get(uri);
-    
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode);
     }
@@ -168,9 +164,6 @@ class Loose {
         resBody['updateTime'] as String);
     return LooseResponse.single(shell);
   }
-
-
-  
 
   // UPDATE
   Future<LooseResponse<T, S>>
@@ -195,7 +188,7 @@ class Loose {
         Uri.https(authority, '${_database.rootPath}${document.location.path}');
     final reqBody = document.toFirestoreFields();
     final res = await _client.post(uri, body: json.encode(reqBody));
-    
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode);
     }
@@ -235,7 +228,6 @@ class Loose {
     return LooseResponse.single(DocumentShell.empty as T);
   }
 
-
   // QUERY
   Future<LooseResponse<T, S>>
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
@@ -250,8 +242,8 @@ class Loose {
     final uri = Uri.https(authority,
         '${_database.rootPath}${query.document.location.pathToCollection}:runQuery');
 
-   final res = await _client.post(uri, body: reqBody);
-   if (res.statusCode < 200 || res.statusCode > 299) {
+    final res = await _client.post(uri, body: reqBody);
+    if (res.statusCode < 200 || res.statusCode > 299) {
       return LooseResponse.fail(LooseErrors.apiCallFailed);
     }
 
@@ -261,25 +253,28 @@ class Loose {
     if (!((decoded as List)[0] as Map).containsKey('document')) {
       return LooseResponse.list(const []);
     }
-    return LooseResponse.list(
-        (decoded as List).map((e) {
-          final doc = (e as Map)['document'] as Map;
+    return LooseResponse.list((decoded as List).map((e) {
+      final doc = (e as Map)['document'] as Map;
 
-          return query.document.fromFirestore(
-              doc['fields'] as Map<String, Object>,
-              doc['name'] as String,
-              doc['createTime'] as String,
-              doc['updateTime'] as String);
-        }).toList());
+      return query.document.fromFirestore(
+          doc['fields'] as Map<String, Object>,
+          doc['name'] as String,
+          doc['createTime'] as String,
+          doc['updateTime'] as String);
+    }).toList());
   }
 
-  LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(int statusCode) {
+  LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(
+      int statusCode) {
     switch (statusCode) {
-      case 409: return LooseResponse.fail(LooseErrors.documentExists);
-      break;
-      case 404: return LooseResponse.fail(LooseErrors.notFound);
-      break;
-      default: return LooseResponse.fail(LooseErrors.apiCallFailed);
+      case 409:
+        return LooseResponse.fail(LooseErrors.documentExists);
+        break;
+      case 404:
+        return LooseResponse.fail(LooseErrors.notFound);
+        break;
+      default:
+        return LooseResponse.fail(LooseErrors.apiCallFailed);
     }
   }
 
