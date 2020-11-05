@@ -111,7 +111,8 @@ class FromFs {
     }
     if (value.containsKey('arrayValue')) {
       final valuesList =
-          (value['arrayValue'] as Map<String, Object>)['values'] as List;
+          (value['arrayValue'] as Map<String, Object>)['values'] as List ??
+              const [];
       return valuesList
           .map((e) => mapDecoder(e as Map<String, Object>))
           .toList();
