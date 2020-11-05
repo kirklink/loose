@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.38
+- Fix double that looks like int from firestore
+
 ## 0.0.37
 - Fix reference assignment
 
