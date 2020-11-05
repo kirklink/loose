@@ -7,15 +7,16 @@ class Reference {
   String _location;
 
   // String get location => _location;
-  
-  Reference(Documenter document, FirestoreDatabase database, [String name = '']) {
+
+  Reference(Documenter document, FirestoreDatabase database,
+      [String name = '']) {
     if (document.location.name == dynamicNameToken && name.isEmpty) {
       throw LooseException('A document name must be provided.');
     }
     if (document.location.name != dynamicNameToken) {
       name = document.location.name;
     }
-    _location = '${database.rootPath}/${document.location.path}/$name';
+    _location = '${database.documentRoot}${document.location.path}/$name';
   }
 
   @override
@@ -30,14 +31,8 @@ class Reference {
     }
     return toString() == other.toString();
   }
-  
+
   Reference.fromFirestore(Map<String, Object> value) {
     _location = value['referenceValue'] as String;
   }
-
-  
-  
-
 }
-
-

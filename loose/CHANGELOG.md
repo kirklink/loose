@@ -1,5 +1,9 @@
 # Loose Builder Changelog
 
+
+## 0.0.37
+- Fix reference assignment
+
 ## 0.0.36
 - Fix readonlyNull annotation on fields
 
