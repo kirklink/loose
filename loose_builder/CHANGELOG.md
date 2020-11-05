@@ -1,5 +1,7 @@
 # Loose Builder Changelog
 
+## 0.0.35
+- Expose raw Firestore response in document retrieval
 
 ## 0.0.34
 - Fix error when auto assigning document id

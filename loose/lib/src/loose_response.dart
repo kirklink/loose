@@ -1,24 +1,20 @@
-
-
-
 import 'package:loose/src/document_shell.dart';
 import 'package:loose/src/loose_exception.dart';
 
 class LooseError {
+  final int code;
+  final String message;
+  final String serverMessage;
 
- final int code;
- final String message;
+  const LooseError._(
+      [this.code = 0, this.message = '', this.serverMessage = '']);
+  const LooseError(this.code, this.message, this.serverMessage);
 
- const LooseError._([this.code, this.message]);
- const LooseError(this.code, this.message);
+  static const LooseError empty = LooseError._();
 
- static const LooseError empty = LooseError._();
-
- bool get isEmpty => code == null && message == null;
- bool get isNotEmpty => !isEmpty;
-
+  bool get isEmpty => code == null && message == null;
+  bool get isNotEmpty => !isEmpty;
 }
-
 
 class LooseResponse<T extends DocumentShell<S>, S> {
   DocumentShell<S> _shell;
@@ -26,23 +22,25 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   bool _isList = false;
   LooseError _error;
 
-  bool get ok => _error == null;
+  bool get ok => _error == LooseError.empty;
   String get error => _error.message;
   int get errorCode => _error.code;
+  String get serverError => _error.serverMessage;
 
   int get count => !ok ? 0 : !_isList ? 1 : _shellList.length;
 
-  
   LooseResponse.single(T shell) {
     _isList = false;
     _shell = shell;
     _shellList = const [];
+    _error = LooseError.empty;
   }
 
   LooseResponse.list(List<T> list) {
     _isList = true;
     _shell = DocumentShell.empty();
     _shellList = list;
+    _error = LooseError.empty;
   }
 
   LooseResponse.fail(this._error) {
@@ -52,20 +50,23 @@ class LooseResponse<T extends DocumentShell<S>, S> {
 
   void _singleMethod() {
     if (_isList) {
-      throw LooseException('This method cannot be used when expecting a document list response.');
+      throw LooseException(
+          'This method cannot be used when expecting a document list response.');
     }
   }
 
   void _listMethod() {
     if (!_isList) {
-      throw LooseException('This method cannot be used when expecting a single document response.');
+      throw LooseException(
+          'This method cannot be used when expecting a single document response.');
     }
   }
-  
+
   S get entity {
     _singleMethod();
     if (!ok) {
-      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+      throw LooseException(
+          'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
     return _shell.entity;
   }
@@ -73,7 +74,8 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   DocumentShell<S> get document {
     _singleMethod();
     if (!ok) {
-      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+      throw LooseException(
+          'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
     return _shell;
   }
@@ -81,10 +83,9 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   List<T> get list {
     _listMethod();
     if (!ok) {
-      throw LooseException('No document was returned. Handle error if LooseResponse.success is not true.');
+      throw LooseException(
+          'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
     return _shellList;
   }
-  
-
 }

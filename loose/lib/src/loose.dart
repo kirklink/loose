@@ -15,9 +15,12 @@ import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
 abstract class LooseErrors {
-  static const documentExists = LooseError(409, 'Document already exists');
-  static const notFound = LooseError(404, 'Document not found');
-  static const apiCallFailed = LooseError(500, 'Call to Firestore failed.');
+  static LooseError documentExists(String serverMessage) =>
+      LooseError(409, 'Document already exists', serverMessage);
+  static LooseError notFound(String serverMessage) =>
+      LooseError(404, 'Document not found', serverMessage);
+  static LooseError apiCallFailed(String serverMessage) =>
+      LooseError(500, 'Call to Firestore failed.', serverMessage);
 }
 
 class Loose {
@@ -115,7 +118,7 @@ class Loose {
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return _singleEntityResponseFails<T, S>(res.statusCode);
+      return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
 
     final resBody = json.decode(res.body) as Map<String, Object>;
@@ -153,7 +156,7 @@ class Loose {
     final res = await _client.get(uri);
 
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return _singleEntityResponseFails<T, S>(res.statusCode);
+      return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
 
     final resBody = json.decode(res.body);
@@ -190,7 +193,7 @@ class Loose {
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return _singleEntityResponseFails<T, S>(res.statusCode);
+      return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
 
     final resBody = json.decode(res.body);
@@ -223,7 +226,7 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return _singleEntityResponseFails<T, S>(res.statusCode);
+      return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
     return LooseResponse.single(DocumentShell.empty as T);
   }
@@ -244,7 +247,7 @@ class Loose {
 
     final res = await _client.post(uri, body: reqBody);
     if (res.statusCode < 200 || res.statusCode > 299) {
-      return LooseResponse.fail(LooseErrors.apiCallFailed);
+      return LooseResponse.fail(LooseErrors.apiCallFailed(res.body));
     }
 
     final decoded = json.decode(res.body);
@@ -265,16 +268,16 @@ class Loose {
   }
 
   LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(
-      int statusCode) {
+      int statusCode, String serverResponse) {
     switch (statusCode) {
       case 409:
-        return LooseResponse.fail(LooseErrors.documentExists);
+        return LooseResponse.fail(LooseErrors.documentExists(serverResponse));
         break;
       case 404:
-        return LooseResponse.fail(LooseErrors.notFound);
+        return LooseResponse.fail(LooseErrors.notFound(serverResponse));
         break;
       default:
-        return LooseResponse.fail(LooseErrors.apiCallFailed);
+        return LooseResponse.fail(LooseErrors.apiCallFailed(serverResponse));
     }
   }
 
