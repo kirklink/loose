@@ -1,5 +1,9 @@
 # Loose Builder Changelog
 
+
+## 0.0.32
+- Fix error when auto assigning document id
+
 ## 0.0.31
 - Auto assign id when creating a document
 

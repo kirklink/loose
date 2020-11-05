@@ -87,9 +87,12 @@ class Loose {
     }
 
     var workingPath = '${document.location.path}';
-    final adjustForProvidedId = autoAssignId ? 0 : 1;
+
+    final adjustForProvidedId = autoAssignId ? 2 : 1;
+
     final ancestorCount =
         workingPath.split(dynamicNameToken).length - adjustForProvidedId;
+
     if (ancestorCount != idPath.length) {
       throw LooseException(
           '${idPath.length} ancestor ids were provided. $ancestorCount required in $workingPath');
