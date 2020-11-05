@@ -1,5 +1,8 @@
 # Loose Builder Changelog
 
+## 0.0.36
+- Fix readonlyNull annotation on fields
+
 ## 0.0.35
 - Expose raw Firestore response in document retrieval
 
