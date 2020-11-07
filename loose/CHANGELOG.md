@@ -1,5 +1,8 @@
-# Loose Builder Changelog
+# Loose Changelog
 
+
+## 0.0.40
+- Allow deep nested references
 
 ## 0.0.39
 - Better handling for null lists from firestore

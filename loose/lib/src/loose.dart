@@ -67,8 +67,8 @@ class Loose {
     }
   }
 
-  Reference reference(Documenter document, [String name = '']) {
-    return Reference(document, _database, name);
+  Reference reference(Documenter document, {List<String> idPath = const []}) {
+    return Reference(document, _database, idPath: idPath);
   }
 
   // CREATE
