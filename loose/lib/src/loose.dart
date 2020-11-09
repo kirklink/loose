@@ -76,7 +76,8 @@ class Loose {
       create<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
-          bool autoAssignId = false}) async {
+          bool autoAssignId = false,
+          bool printFields = false}) async {
     if (document.location.name == dynamicNameToken &&
         idPath.isEmpty &&
         !autoAssignId) {
@@ -115,6 +116,9 @@ class Loose {
     }
 
     final reqBody = document.toFirestoreFields();
+    if (printFields) {
+      print(json.encode(reqBody));
+    }
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -172,7 +176,8 @@ class Loose {
   Future<LooseResponse<T, S>>
       update<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
-          {List<String> idPath = const []}) async {
+          {List<String> idPath = const [],
+          bool printFields = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
@@ -190,6 +195,9 @@ class Loose {
     final uri =
         Uri.https(authority, '${_database.rootPath}${document.location.path}');
     final reqBody = document.toFirestoreFields();
+    if (printFields) {
+      print(json.encode(reqBody));
+    }
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     if (res.statusCode < 200 || res.statusCode > 299) {
