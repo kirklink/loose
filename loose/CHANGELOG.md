@@ -1,5 +1,7 @@
 # Loose Changelog
 
+## 0.0.41
+- Fixed bug when storing null in boolean field
 
 ## 0.0.40
 - Allow deep nested references
