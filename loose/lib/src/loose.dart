@@ -13,6 +13,7 @@ import 'package:loose/src/firestore_database.dart';
 import 'package:loose/src/constants.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
+import 'package:loose/src/query/query_field.dart';
 
 import 'loose_exception.dart';
 
@@ -175,11 +176,10 @@ class Loose {
   }
 
   // UPDATE
-  Future<LooseResponse<T, S>>
-      updateOrInsert<T extends DocumentShell<S>, S, R extends QueryFields>(
-          Documenter<T, S, R> document,
-          {List<String> idPath = const [],
-          bool printFields = false}) async {
+  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S,
+          R extends QueryFields, Q extends QueryField>(
+      Documenter<T, S, R> document, List<Q> updateFields,
+      {List<String> idPath = const [], bool printFields = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
@@ -194,9 +194,14 @@ class Loose {
       await _createClient();
     }
 
-    final uri =
-        Uri.https(authority, '${_database.rootPath}${document.location.path}');
+    var params = '?currentDocument.exists=true';
+    for (final field in updateFields) {
+      params = params + '&updateMask.fieldPaths=' + field.name;
+    }
+
+    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final reqBody = document.toFirestoreFields();
+
     if (printFields) {
       print(json.encode(reqBody));
     }

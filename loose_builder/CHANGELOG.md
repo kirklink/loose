@@ -1,6 +1,11 @@
 # Loose Builder Changelog
 
 
+## 0.0.43
+- Make fields queryable by default
+- Add update field masking
+- Fix reference fields accepting null
+
 ## 0.0.42
 - Fix bug in update method
 - Rename update method

@@ -110,7 +110,7 @@ class ToFs {
       throw LooseException(
           'Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
-    if (integer != null) {
+    if (reference != null) {
       return {'referenceValue': reference.toString()};
     } else if (allowNull) {
       return _toNullValue;
