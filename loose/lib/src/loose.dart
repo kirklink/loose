@@ -200,7 +200,7 @@ class Loose {
     if (printFields) {
       print(json.encode(reqBody));
     }
-    final res = await _client.post(uri, body: json.encode(reqBody));
+    final res = await _client.patch(uri, body: json.encode(reqBody));
 
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
