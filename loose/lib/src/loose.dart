@@ -14,6 +14,8 @@ import 'package:loose/src/constants.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 
+import 'loose_exception.dart';
+
 abstract class LooseErrors {
   static LooseError documentExists(String serverMessage) =>
       LooseError(409, 'Document already exists', serverMessage);
@@ -255,8 +257,27 @@ class Loose {
 
     final res = await _client.post(uri, body: reqBody);
     if (res.statusCode < 200 || res.statusCode > 299) {
+      if (res.statusCode == 400) {
+        final resBody = json.decode(res.body) as List<Map<String, Object>>;
+        for (final errorObject in resBody) {
+          final error = errorObject['error'] as Map<String, Object>;
+          if ((error['message'] as String)
+              .startsWith('The query requires an index.')) {
+            throw LooseException((error['message'] as String));
+          }
+        }
+      }
       return LooseResponse.fail(LooseErrors.apiCallFailed(res.body));
     }
+
+//     [{
+//   "error": {
+//     "code": 400,
+//     "message": "The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/dilawri-portal-dev/firestore/indexes?create_composite=Ck9wcm9qZWN0cy9kaWxhd3JpLXBvcnRhbC1kZXYvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3ZkcHMvaW5kZXhlcy9fEAEaEQoNZGVhbGVyc2hpcFJlZhABGg8KC3N0b2NrTnVtYmVyEAEaCwoHdmVyc2lvbhACGgwKCF9fbmFtZV9fEAI",
+//     "status": "FAILED_PRECONDITION"
+//   }
+// }
+// ]
 
     final decoded = json.decode(res.body);
 
