@@ -1,7 +1,7 @@
 name: loose
 homepage: "https://github.com/kirklink/loose"
 description: "Library for working with Google Cloud Firestore in a server application."
-version: 0.0.41
+version: 0.0.42
 
 environment:
   sdk: '>=2.8.0 <3.0.0'

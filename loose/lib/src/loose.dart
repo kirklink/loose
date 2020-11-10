@@ -176,7 +176,7 @@ class Loose {
 
   // UPDATE
   Future<LooseResponse<T, S>>
-      update<T extends DocumentShell<S>, S, R extends QueryFields>(
+      updateOrInsert<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool printFields = false}) async {

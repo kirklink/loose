@@ -1,6 +1,11 @@
 # Loose Builder Changelog
 
 
+## 0.0.42
+- Fix bug in update method
+- Rename update method
+- Throw an error when a index is required for a query
+
 ## 0.0.41
 - Fixed bug when storing null in boolean field
 
