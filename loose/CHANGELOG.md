@@ -1,5 +1,8 @@
 # Loose Changelog
 
+# 0.0.44
+- Better handling of error responses
+
 ## 0.0.43
 - Make fields queryable by default
 - Add update field masking

@@ -263,9 +263,10 @@ class Loose {
     final res = await _client.post(uri, body: reqBody);
     if (res.statusCode < 200 || res.statusCode > 299) {
       if (res.statusCode == 400) {
-        final resBody = json.decode(res.body) as List<Map<String, Object>>;
+        final resBody = json.decode(res.body) as List<Object>;
         for (final errorObject in resBody) {
-          final error = errorObject['error'] as Map<String, Object>;
+          final error = (errorObject as Map<String, Object>)['error']
+              as Map<String, Object>;
           if ((error['message'] as String)
               .startsWith('The query requires an index.')) {
             throw LooseException((error['message'] as String));
