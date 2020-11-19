@@ -1,5 +1,9 @@
 # Loose Changelog
 
+
+# 0.0.45
+- Update analyzer dependency
+
 # 0.0.44
 - Better handling of error responses
 
