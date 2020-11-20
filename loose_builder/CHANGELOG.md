@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+# 0.0.46
+- Upgrade dependencies
+
 # 0.0.45
 - Update analyzer dependency
 

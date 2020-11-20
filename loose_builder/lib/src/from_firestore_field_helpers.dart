@@ -28,7 +28,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
   // classElements.forEach((e) => print(e.displayName));
   // for (final klass in classElements) {
   //   for (final field in klass.fields) {
-  //     print('class: ${klass.type.getDisplayString()}');
+  //     print('class: ${klass.type.getDisplayString(withNullability: false)}');
   //     print('field: $field');
 
   for (final klass in classElements) {
@@ -92,10 +92,12 @@ String convertFromFirestore(ClassElement clazz, int recase,
       } else if (field.type.isDartCoreBool) {
         classBuffer.writeln(
             "..${field.name} = FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)");
-      } else if (field.type.getDisplayString() == 'DateTime') {
+      } else if (field.type.getDisplayString(withNullability: false) ==
+          'DateTime') {
         classBuffer.writeln(
             "..${field.name} = FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)");
-      } else if (field.type.getDisplayString() == 'Reference') {
+      } else if (field.type.getDisplayString(withNullability: false) ==
+          'Reference') {
         classBuffer.writeln(
             "..${field.name} = FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)");
 
@@ -132,7 +134,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
 
         final mapBuf = StringBuffer();
         mapBuf.writeln(
-            "..${field.name} = FromFs.map(m['${dbname}'], (m) => ${field.type.getDisplayString()}()");
+            "..${field.name} = FromFs.map(m['${dbname}'], (m) => ${field.type.getDisplayString(withNullability: false)}()");
         mapBuf.writeln(
             '${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, parent: displayName, nestLevel: nestLevel)}');
         mapBuf.writeln(", name: '${displayName}'$mode)");
@@ -164,9 +166,11 @@ String convertFromFirestore(ClassElement clazz, int recase,
           listBuf.write('(e) => FromFs.float(e, allowNull: true)');
         } else if (elementType.isDartCoreBool) {
           listBuf.write('(e) => FromFs.boolean(e, allowNull: true)');
-        } else if (elementType.getDisplayString() == 'DateTime') {
+        } else if (elementType.getDisplayString(withNullability: false) ==
+            'DateTime') {
           listBuf.write('(e) => FromFs.datetime(e, allowNull: true)');
-        } else if (elementType.getDisplayString() == 'Reference') {
+        } else if (elementType.getDisplayString(withNullability: false) ==
+            'Reference') {
           listBuf.write('(e) => FromFs.reference(e, allowNull: true)');
         } else if (_checkForLooseMap
                 .hasAnnotationOfExact(elementType.element) ||
@@ -201,7 +205,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
           }
 
           listBuf.write(
-              "(e) => FromFs.map(e, (m) => ${elementType.getDisplayString()}()");
+              "(e) => FromFs.map(e, (m) => ${elementType.getDisplayString(withNullability: false)}()");
           listBuf.writeln(
               '${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: 0, inList: true)}');
           listBuf.write(", name: '${displayName}'$mode)");

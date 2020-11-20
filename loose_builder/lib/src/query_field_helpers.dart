@@ -47,7 +47,7 @@ String createQueryFields(ClassElement element, int recase,
       if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
           _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
         if (field.type.element is! ClassElement) {
-          throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.element.getDisplayString(withNullability: null)}');
+          throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.element.getDisplayString(withNullability: false)}');
         }
         // stash.add(field);
         final nextClassParents = <String>[];
@@ -128,9 +128,11 @@ String convertToQueryField(FieldElement field, int recase,
     return "final $fieldName = DoubleField('$dbName');";
   } else if (field.type.isDartCoreBool) {
     return "final $fieldName = BoolField('$dbName');";
-  } else if (field.type.getDisplayString() == 'DateTime') {
+  } else if (field.type.getDisplayString(withNullability: false) ==
+      'DateTime') {
     return "final $fieldName = DateTimeField('$dbName');";
-  } else if (field.type.getDisplayString() == 'Reference') {
+  } else if (field.type.getDisplayString(withNullability: false) ==
+      'Reference') {
     return "final $fieldName = ReferenceField('$dbName');";
   } else if (field.type.isDartCoreList) {
     final types = _getGenericTypes(field.type);
@@ -157,9 +159,11 @@ String convertToQueryField(FieldElement field, int recase,
       buf.write("(double e) => {'doubleValue': e}");
     } else if (elementType.isDartCoreBool) {
       buf.write("(bool e) => {'booleanValue': e}");
-    } else if (elementType.getDisplayString() == 'DateTime') {
+    } else if (elementType.getDisplayString(withNullability: false) ==
+        'DateTime') {
       buf.write("(DateTime e) => {'timestampValue': e.toIso8601String()}");
-    } else if (elementType.getDisplayString() == 'Reference') {
+    } else if (elementType.getDisplayString(withNullability: false) ==
+        'Reference') {
       buf.write("(Reference e) => {'referenceValue': e.toString()}");
     }
     buf.write(");");
@@ -168,7 +172,7 @@ String convertToQueryField(FieldElement field, int recase,
     // } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
     //   final element = field.type.element;
     //   if (element is! ClassElement) {
-    //     throw ('LooseMap must only annotate a class: ${field.type.getDisplayString()}');
+    //     throw ('LooseMap must only annotate a class: ${field.type.getDisplayString(withNullability: false)}');
     //   }
     //   final buf = StringBuffer();
     //   for (final f in (element as ClassElement).fields) {
