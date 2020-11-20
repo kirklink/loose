@@ -1,13 +1,16 @@
 # Loose Changelog
 
 
-# 0.0.46
+## 0.0.47
+- Align analyzer dependency with similar packages
+
+## 0.0.46
 - Upgrade dependencies
 
-# 0.0.45
+## 0.0.45
 - Update analyzer dependency
 
-# 0.0.44
+## 0.0.44
 - Better handling of error responses
 
 ## 0.0.43

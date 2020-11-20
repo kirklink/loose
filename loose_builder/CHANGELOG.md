@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.47
+- Align analyzer dependency with similar packages
+
 # 0.0.46
 - Upgrade dependencies
 
