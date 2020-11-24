@@ -134,7 +134,10 @@ String convertToQueryField(FieldElement field, int recase,
   } else if (field.type.getDisplayString(withNullability: false) ==
       'Reference') {
     return "final $fieldName = ReferenceField('$dbName');";
+
+    // LIST
   } else if (field.type.isDartCoreList) {
+    print('ITS A LIST');
     final types = _getGenericTypes(field.type);
     if (types.isEmpty) {
       throw LooseBuilderException(
@@ -152,6 +155,7 @@ String convertToQueryField(FieldElement field, int recase,
     var buf = StringBuffer();
     buf.write("final $fieldName = ArrayField('$dbName', ");
     if (elementType.isDartCoreString) {
+      print('OF STRINGS');
       buf.write("(String e) => {'stringValue': e}");
     } else if (elementType.isDartCoreInt) {
       buf.write("(int e) => {'integerValue': e.toString()}");
@@ -165,24 +169,29 @@ String convertToQueryField(FieldElement field, int recase,
     } else if (elementType.getDisplayString(withNullability: false) ==
         'Reference') {
       buf.write("(Reference e) => {'referenceValue': e.toString()}");
+    } else {
+      return '';
     }
     buf.write(");");
+    print(buf);
     return buf.toString();
-
-    // } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-    //   final element = field.type.element;
-    //   if (element is! ClassElement) {
-    //     throw ('LooseMap must only annotate a class: ${field.type.getDisplayString(withNullability: false)}');
-    //   }
-    //   final buf = StringBuffer();
-    //   for (final f in (element as ClassElement).fields) {
-    //     if (f.isStatic) {
-    //       continue;
-    //     }
-    //     var nextParents = <String>[]..addAll(parents)..add(field.name);
-    //     buf.write(convertToQueryField(f, recase, nextParents));
-    //   }
-    //   return buf.toString();
+  } else if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element) ||
+      _checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+    final element = field.type.element;
+    if (element is! ClassElement) {
+      throw ('LooseMap must only annotate a class: ${field.type.getDisplayString(withNullability: false)}');
+    }
+    final buf = StringBuffer();
+    for (final f in (element as ClassElement).fields) {
+      if (f.isStatic) {
+        continue;
+      }
+      var nextParents = <String>[]
+        ..addAll(fieldParents)
+        ..add(field.name);
+      buf.write(convertToQueryField(f, recase, nextParents));
+    }
+    return buf.toString();
   }
   return '';
 }

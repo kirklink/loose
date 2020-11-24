@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.48
+- Fix issue with querying array data
+
 ## 0.0.47
 - Align analyzer dependency with similar packages
 
