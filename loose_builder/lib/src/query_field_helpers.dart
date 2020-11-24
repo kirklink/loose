@@ -137,7 +137,6 @@ String convertToQueryField(FieldElement field, int recase,
 
     // LIST
   } else if (field.type.isDartCoreList) {
-    print('ITS A LIST');
     final types = _getGenericTypes(field.type);
     if (types.isEmpty) {
       throw LooseBuilderException(
@@ -155,7 +154,6 @@ String convertToQueryField(FieldElement field, int recase,
     var buf = StringBuffer();
     buf.write("final $fieldName = ArrayField('$dbName', ");
     if (elementType.isDartCoreString) {
-      print('OF STRINGS');
       buf.write("(String e) => {'stringValue': e}");
     } else if (elementType.isDartCoreInt) {
       buf.write("(int e) => {'integerValue': e.toString()}");
@@ -173,7 +171,6 @@ String convertToQueryField(FieldElement field, int recase,
       return '';
     }
     buf.write(");");
-    print(buf);
     return buf.toString();
   } else if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element) ||
       _checkForLooseMap.hasAnnotationOfExact(field.type.element)) {

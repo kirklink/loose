@@ -1,5 +1,7 @@
 # Loose Changelog
 
+## 0.0.49
+- Remove rogue print statement
 
 ## 0.0.48
 - Fix issue with querying array data
