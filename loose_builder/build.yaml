@@ -6,7 +6,7 @@ targets:
 
 builders:
   loose_builder:
-    import: "package:loose_builder/src/loose_builder.dart"
+    import: "package:loose_builder/loose_builder.dart"
     builder_factories: ["LooseBuilder"]
     build_extensions: {".dart": [".loose.g.part"]}
     auto_apply: dependents
