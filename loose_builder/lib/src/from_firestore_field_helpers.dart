@@ -208,9 +208,9 @@ String convertFromFirestore(ClassElement clazz, int recase,
               "(e) => FromFs.map(e, (m) => ${elementType.getDisplayString(withNullability: false)}()");
           listBuf.writeln(
               '${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: 0, inList: true)}');
-          listBuf.write(", name: '${displayName}'$mode)");
+          // listBuf.write(", name: '${displayName}'$mode)");
         }
-        listBuf.writeln(')');
+        listBuf.write(", name: '${displayName}'$mode)");
         classBuffer.writeln(listBuf.toString());
       }
     }

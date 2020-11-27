@@ -1,5 +1,8 @@
 # Loose Changelog
 
+## 0.0.50
+- Fix reading null lists
+
 ## 0.0.49
 - Remove rogue print statement
 
