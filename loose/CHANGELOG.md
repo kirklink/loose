@@ -1,5 +1,9 @@
 # Loose Changelog
 
+
+## 0.0.51
+- Fix new bug in 0.0.50
+
 ## 0.0.50
 - Fix reading null lists
 
