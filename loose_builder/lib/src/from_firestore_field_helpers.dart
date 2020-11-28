@@ -6,6 +6,9 @@ import 'package:loose/annotations.dart';
 
 import 'package:loose_builder/src/loose_builder_exception.dart';
 import 'package:loose_builder/src/recase_helper.dart';
+import 'package:loose_builder/src/constants.dart' show documentIdFieldName;
+import 'package:loose_builder/src/uses_identifier_helper.dart'
+    show usesIdentifier;
 
 final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
@@ -34,6 +37,9 @@ String convertFromFirestore(ClassElement clazz, int recase,
   for (final klass in classElements) {
     for (final field in klass.fields) {
       if (field.isStatic || field.isSynthetic) {
+        continue;
+      }
+      if (usesIdentifier(clazz) && field.name == documentIdFieldName) {
         continue;
       }
 
@@ -215,5 +221,6 @@ String convertFromFirestore(ClassElement clazz, int recase,
       }
     }
   }
+
   return classBuffer.toString();
 }

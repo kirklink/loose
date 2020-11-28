@@ -4,6 +4,7 @@ export 'src/documenter.dart';
 export 'src/document_info.dart';
 export 'src/resource.dart';
 export 'src/collection.dart';
+export 'src/identifier.dart';
 export 'src/reference.dart';
 export 'src/query/query_field.dart';
 export 'src/query/query.dart';

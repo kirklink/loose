@@ -27,7 +27,11 @@ class LooseResponse<T extends DocumentShell<S>, S> {
   int get errorCode => _error.code;
   String get serverError => _error.serverMessage;
 
-  int get count => !ok ? 0 : !_isList ? 1 : _shellList.length;
+  int get count => !ok
+      ? 0
+      : !_isList
+          ? 1
+          : _shellList.length;
 
   LooseResponse.single(T shell) {
     _isList = false;
@@ -69,6 +73,15 @@ class LooseResponse<T extends DocumentShell<S>, S> {
           'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
     return _shell.entity;
+  }
+
+  List<S> get entities {
+    _listMethod();
+    if (!ok) {
+      throw LooseException(
+          'No documents were returned. Handle error if LooseResponse.ok is not true.');
+    }
+    return _shellList.map((DocumentShell<S> e) => e.entity).toList();
   }
 
   DocumentShell<S> get document {

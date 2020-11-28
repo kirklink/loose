@@ -1,6 +1,11 @@
 # Loose Builder Changelog
 
 
+## 0.0.52
+- Add Identifier mixin class
+- Add internals to assign id to output
+- Add direct access to entities in query response
+
 ## 0.0.51
 - Fix new bug in 0.0.50
 
