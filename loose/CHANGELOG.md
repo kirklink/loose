@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.54
+- Used optional positioned parameters in loose constructor
+
 ## 0.0.53
 - Optionally add a named constructor "loose"
 
