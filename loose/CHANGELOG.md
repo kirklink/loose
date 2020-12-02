@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.56
+- Better handling of private fields
+
 ## 0.0.55
 - Minor clean up
 

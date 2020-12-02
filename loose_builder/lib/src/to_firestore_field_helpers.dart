@@ -45,9 +45,9 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       }
       var name = field.name;
       name = recaseFieldName(recase, name);
-      if (field.isPrivate) {
-        name = name.replaceFirst('_', '');
-      }
+      // if (field.isPrivate) {
+      //   name = name.replaceFirst('_', '');
+      // }
       var allowNull = globalAllowNull;
       var useDefaultValue = globalUseDefaultValues;
 

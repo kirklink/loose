@@ -38,7 +38,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
   });
 
   final constructorBuf = StringBuffer();
-  if (nestLevel == 0) {
+  if (nestLevel == 0 && !inList) {
     constructorBuf.write(
         "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
   } else {
@@ -70,9 +70,9 @@ String convertFromFirestore(ClassElement clazz, int recase,
       }
 
       var fieldName = field.name;
-      if (field.isPrivate) {
-        fieldName = fieldName.replaceFirst('_', '');
-      }
+      // if (field.isPrivate) {
+      //   fieldName = fieldName.replaceFirst('_', '');
+      // }
 
       var dbname = recaseFieldName(recase, fieldName);
 

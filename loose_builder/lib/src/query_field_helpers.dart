@@ -98,10 +98,10 @@ String convertToQueryField(FieldElement field, int recase,
     [List<String> fieldParents = const <String>[]]) {
   var fieldName = field.name;
   if (field.isPrivate) {
-    fieldName = fieldName.replaceFirst('_', '');
+    fieldName = '\$' + fieldName;
   }
 
-  var dbName = recaseFieldName(recase, fieldName);
+  var dbName = recaseFieldName(recase, field.name);
 
   if (fieldParents.isNotEmpty) {
     // fieldName = '${parents.join('.')}.${field.name}';
