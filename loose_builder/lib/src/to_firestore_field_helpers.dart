@@ -40,7 +40,9 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
-      if (usesIdentifier(clazz) && field.name == documentIdFieldName) {
+      if (usesIdentifier(clazz) &&
+          (field.name == documentIdFieldName ||
+              field.name == '_${documentIdFieldName}')) {
         continue;
       }
       var name = field.name;

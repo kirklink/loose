@@ -124,13 +124,13 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('@override');
     classBuf.writeln(
         '$documentName fromFirestore(Map<String, Object> m, String name, String createTime, String updateTime) {');
-    classBuf.write('final e = $className()');
+
     // fromFields
     classBuf.writeln(
         convertFromFirestore(element, recase, allowNulls, readonlyNulls));
 
     if (usesIdentifier(element)) {
-      classBuf.write("..${documentIdFieldName} = name.split('/').last");
+      classBuf.write("..setId(name.split('/').last)");
     }
     classBuf.writeln(';');
 

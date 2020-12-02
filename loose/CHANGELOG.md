@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.53
+- Optionally add a named constructor "loose"
+
 ## 0.0.52
 - Add Identifier mixin class
 - Add internals to assign id to output

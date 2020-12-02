@@ -23,6 +23,31 @@ String convertFromFirestore(ClassElement clazz, int recase,
     {String parent = '', int nestLevel = 0, bool inList = false}) {
   final classBuffer = StringBuffer();
 
+  final constructorFields = <String>[];
+  bool hasLooseConstructor = false;
+
+  clazz.constructors.forEach((c) {
+    if (c.name == 'loose') {
+      hasLooseConstructor = true;
+      c.parameters.forEach((p) {
+        if (p.isOptionalNamed) {
+          constructorFields.add('${p.name}');
+        }
+      });
+    }
+  });
+
+  final constructorBuf = StringBuffer();
+  if (nestLevel == 0) {
+    constructorBuf.write(
+        "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
+  } else {
+    constructorBuf
+        .write('${clazz.name}${hasLooseConstructor ? '.loose' : ''}(');
+  }
+
+  // final constructorStatements = <String>[];
+
   final classElements = <ClassElement>[];
   classElements.add(clazz);
   for (final superType in clazz.allSupertypes) {
@@ -39,7 +64,9 @@ String convertFromFirestore(ClassElement clazz, int recase,
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
-      if (usesIdentifier(clazz) && field.name == documentIdFieldName) {
+      if (usesIdentifier(clazz) &&
+          (field.name == documentIdFieldName ||
+              field.name == '_${documentIdFieldName}')) {
         continue;
       }
 
@@ -86,26 +113,31 @@ String convertFromFirestore(ClassElement clazz, int recase,
         mode = ', allowNull: true';
       }
 
+      // final fieldBuf = StringBuffer();
+      // if (!constructorFields.contains(field.name)) {
+
+      // }
+
+      String converter;
       if (field.type.isDartCoreString) {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.string(m['${dbname}'], name: '${displayName}'$mode)");
+        converter =
+            "FromFs.string(m['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreInt) {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.integer(m['${dbname}'], name: '${displayName}'$mode)");
+        converter =
+            "FromFs.integer(m['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreDouble) {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.float(m['${dbname}'], name: '${displayName}'$mode)");
+        converter = "FromFs.float(m['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreBool) {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)");
+        converter =
+            "FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)");
+        converter =
+            "FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
-        classBuffer.writeln(
-            "..${field.name} = FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)");
+        converter =
+            "FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)";
 
         // Map
       } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
@@ -139,12 +171,12 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
 
         final mapBuf = StringBuffer();
-        mapBuf.writeln(
-            "..${field.name} = FromFs.map(m['${dbname}'], (m) => ${field.type.getDisplayString(withNullability: false)}()");
+        mapBuf.writeln("FromFs.map(m['${dbname}'], (m) => ");
         mapBuf.writeln(
             '${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, parent: displayName, nestLevel: nestLevel)}');
         mapBuf.writeln(", name: '${displayName}'$mode)");
-        classBuffer.write(mapBuf.toString());
+        converter = mapBuf.toString();
+        // classBuffer.write(mapBuf.toString());
 
         // List
       } else if (field.type.isDartCoreList) {
@@ -163,7 +195,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
         final elementType = elementTypes.first;
         final listBuf = StringBuffer();
-        listBuf.write("..${field.name} = FromFs.list(m['${field.name}'], ");
+        listBuf.write("FromFs.list(m['${field.name}'], ");
         if (elementType.isDartCoreString) {
           listBuf.write('(e) => FromFs.string(e, allowNull: true)');
         } else if (elementType.isDartCoreInt) {
@@ -210,17 +242,37 @@ String convertFromFirestore(ClassElement clazz, int recase,
             childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
           }
 
-          listBuf.write(
-              "(e) => FromFs.map(e, (m) => ${elementType.getDisplayString(withNullability: false)}()");
+          listBuf.write("(e) => FromFs.map(e, (m) => ");
           listBuf.writeln(
               '${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: 0, inList: true)}');
           listBuf.write(", name: '${displayName}'$mode)");
         }
         listBuf.write(", name: '${displayName}'$mode)");
-        classBuffer.writeln(listBuf.toString());
+        converter = listBuf.toString();
+        // classBuffer.writeln(listBuf.toString());
+      }
+      if (constructorFields.contains(field.name)) {
+        constructorBuf.write('${field.name}: ');
+        constructorBuf.writeAll([converter, ',']);
+      } else {
+        classBuffer.write('..${field.name} = ');
+        classBuffer.write(converter);
       }
     }
   }
 
-  return classBuffer.toString();
+  // clazz.constructors.forEach((c) {
+  //   if (c.isDefaultConstructor) {
+  //     c.parameters.forEach((p) {
+  //       if (p.isOptionalNamed) {
+  //         constructorBuf.write('${p.name}: ');
+  //       }
+  //     });
+  //   }
+  // });
+
+  constructorBuf.writeln(')');
+  final result = constructorBuf.toString() + classBuffer.toString();
+  // print(result);
+  return result;
 }
