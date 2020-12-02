@@ -40,13 +40,14 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
-      if (usesIdentifier(clazz) &&
-          (field.name == documentIdFieldName ||
-              field.name == '_${documentIdFieldName}')) {
+      if (usesIdentifier(clazz) && (field.name == documentIdFieldName)) {
         continue;
       }
       var name = field.name;
       name = recaseFieldName(recase, name);
+      if (field.isPrivate) {
+        name = name.replaceFirst('_', '');
+      }
       var allowNull = globalAllowNull;
       var useDefaultValue = globalUseDefaultValues;
 
@@ -96,10 +97,12 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       }
 
       var inheritedName = name;
+      var inheritedNameDisplay = field.name;
       if (parent.isNotEmpty) {
         inheritedName = '$parent?.$name';
+        inheritedNameDisplay = '$parent.$name';
       }
-      final inheritedNameDisplay = inheritedName.replaceAll('?', '');
+      // final inheritedNameDisplay = inheritedName.replaceAll('?', '');
 
       String mode = '';
       if (useDefaultValue) {

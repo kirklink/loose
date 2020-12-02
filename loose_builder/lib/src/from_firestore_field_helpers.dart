@@ -30,7 +30,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
     if (c.name == 'loose') {
       hasLooseConstructor = true;
       c.parameters.forEach((p) {
-        if (p.isOptionalNamed) {
+        if (p.isOptionalPositional) {
           constructorFields.add('${p.name}');
         }
       });
@@ -58,20 +58,24 @@ String convertFromFirestore(ClassElement clazz, int recase,
   //   for (final field in klass.fields) {
   //     print('class: ${klass.type.getDisplayString(withNullability: false)}');
   //     print('field: $field');
+  final converters = <String, String>{};
 
   for (final klass in classElements) {
     for (final field in klass.fields) {
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
-      if (usesIdentifier(clazz) &&
-          (field.name == documentIdFieldName ||
-              field.name == '_${documentIdFieldName}')) {
+      if (usesIdentifier(clazz) && (field.name == documentIdFieldName)) {
         continue;
       }
 
-      var dbname = field.name;
-      dbname = recaseFieldName(recase, dbname);
+      var fieldName = field.name;
+      if (field.isPrivate) {
+        fieldName = fieldName.replaceFirst('_', '');
+      }
+
+      var dbname = recaseFieldName(recase, fieldName);
+
       var allowNull = globalAllowNulls || globalReadonlyNulls;
 
       if (_checkForLooseField.hasAnnotationOfExact(field)) {
@@ -118,7 +122,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
 
       // }
 
-      String converter;
+      var converter = '';
       if (field.type.isDartCoreString) {
         converter =
             "FromFs.string(m['${dbname}'], name: '${displayName}'$mode)";
@@ -251,15 +255,23 @@ String convertFromFirestore(ClassElement clazz, int recase,
         converter = listBuf.toString();
         // classBuffer.writeln(listBuf.toString());
       }
+
       if (constructorFields.contains(field.name)) {
-        constructorBuf.write('${field.name}: ');
-        constructorBuf.writeAll([converter, ',']);
+        converters[field.name] = converter;
+        // constructorBuf.write('${field.name}: ');
+
       } else {
         classBuffer.write('..${field.name} = ');
         classBuffer.write(converter);
       }
     }
+
+    // constructorBuf.writeAll([converter, ',']);
   }
+  constructorFields.forEach((e) {
+    constructorBuf.writeln(converters[e]);
+    constructorBuf.writeln(',');
+  });
 
   // clazz.constructors.forEach((c) {
   //   if (c.isDefaultConstructor) {
