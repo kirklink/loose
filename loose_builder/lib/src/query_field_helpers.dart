@@ -91,7 +91,6 @@ String createQueryFields(ClassElement element, int recase,
   qClassBuf.writeln('}');
   pageBuf.writeln(qClassBuf);
 
-  // print(pageBuf);
   return pageBuf.toString();
 }
 
@@ -99,13 +98,10 @@ String convertToQueryField(FieldElement field, int recase,
     [List<String> fieldParents = const <String>[]]) {
   var fieldName = field.name;
   if (field.isPrivate) {
-    print('FIELD IS PRIVATE: $fieldName');
     fieldName = fieldName.replaceFirst('_', '');
-    print('fieldName: $fieldName');
   }
 
   var dbName = recaseFieldName(recase, fieldName);
-  print('dbName: $dbName');
 
   if (fieldParents.isNotEmpty) {
     // fieldName = '${parents.join('.')}.${field.name}';
@@ -134,7 +130,6 @@ String convertToQueryField(FieldElement field, int recase,
     //   return '';
   }
 
-  print('second dbName: $dbName');
   if (field.type.isDartCoreString) {
     return "final $fieldName = StringField('$dbName');";
   } else if (field.type.isDartCoreInt) {

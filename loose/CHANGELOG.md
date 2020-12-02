@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.55
+- Minor clean up
+
 ## 0.0.54
 - Used optional positioned parameters in loose constructor
 
