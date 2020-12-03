@@ -38,7 +38,9 @@ String convertFromFirestore(ClassElement clazz, int recase,
   });
 
   final constructorBuf = StringBuffer();
-  if (nestLevel == 0 && !inList) {
+  if (nestLevel == 0 &&
+      !inList &&
+      !_checkForLooseMap.hasAnnotationOfExact(clazz)) {
     constructorBuf.write(
         "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
   } else {
@@ -285,6 +287,6 @@ String convertFromFirestore(ClassElement clazz, int recase,
 
   constructorBuf.writeln(')');
   final result = constructorBuf.toString() + classBuffer.toString();
-  // print(result);
+  print(result);
   return result;
 }

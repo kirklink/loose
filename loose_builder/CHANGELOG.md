@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.57
+- Update LooseMap building for private fields
+
 ## 0.0.56
 - Better handling of private fields
 
