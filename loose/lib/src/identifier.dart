@@ -1,3 +1,3 @@
 abstract class Identifier {
-  String $id = '';
+  String id = '';
 }

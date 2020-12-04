@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.62
+- Update id field name again
+
 ## 0.0.61
 - Update id field name
 
