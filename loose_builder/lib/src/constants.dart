@@ -1,1 +1,1 @@
-const documentIdFieldName = '_id';
+const documentIdFieldName = '\$id';

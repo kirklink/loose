@@ -130,7 +130,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
         convertFromFirestore(element, recase, allowNulls, readonlyNulls));
 
     if (usesIdentifier(element)) {
-      classBuf.write("..setId(name.split('/').last)");
+      classBuf.write("..\$id = name.split('/').last");
     }
     classBuf.writeln(';');
 

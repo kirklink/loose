@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.60
+- Make id not private so libraries like json_serializable can see it
+
 ## 0.0.59
 - Fix minor oops
 
