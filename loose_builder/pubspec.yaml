@@ -5,9 +5,9 @@ version: 0.0.60
 environment:
   sdk: '>=2.9.0 <3.0.0'
 dependencies:
-  # loose: ^0.0.60
-  loose:
-    path: ../loose
+  loose: ^0.0.60
+  # loose:
+  #   path: ../loose
   source_gen: ^0.9.0
   build: ^1.5.1
   analyzer: ^0.40.4
