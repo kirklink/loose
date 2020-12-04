@@ -38,14 +38,14 @@ String convertFromFirestore(ClassElement clazz, int recase,
   });
 
   final constructorBuf = StringBuffer();
-  if (nestLevel == 0 &&
-      !inList &&
-      !_checkForLooseMap.hasAnnotationOfExact(clazz)) {
-    constructorBuf.write(
-        "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
-  } else {
+  if (nestLevel > 0 ||
+      inList ||
+      _checkForLooseMap.hasAnnotationOfExact(clazz)) {
     constructorBuf
         .write('${clazz.name}${hasLooseConstructor ? '.loose' : ''}(');
+  } else {
+    constructorBuf.write(
+        "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
   }
 
   // final constructorStatements = <String>[];
