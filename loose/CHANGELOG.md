@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.59
+- Fix minor oops
+
 ## 0.0.58
 - Fix minor oops
 

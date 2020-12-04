@@ -287,6 +287,6 @@ String convertFromFirestore(ClassElement clazz, int recase,
 
   constructorBuf.writeln(')');
   final result = constructorBuf.toString() + classBuffer.toString();
-  print(result);
+  // print(result);
   return result;
 }
