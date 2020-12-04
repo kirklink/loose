@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.61
+- Update id field name
+
 ## 0.0.60
 - Make id not private so libraries like json_serializable can see it
 
