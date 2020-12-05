@@ -80,7 +80,8 @@ class Loose {
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool autoAssignId = false,
-          bool printFields = false}) async {
+          bool printFields = false,
+          bool keepClientOpen = false}) async {
     if (document.location.name == dynamicNameToken &&
         idPath.isEmpty &&
         !autoAssignId) {
@@ -124,6 +125,11 @@ class Loose {
     }
     final res = await _client.post(uri, body: json.encode(reqBody));
 
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
+    }
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
@@ -142,7 +148,8 @@ class Loose {
   Future<LooseResponse<T, S>>
       read<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
-          {List<String> idPath = const []}) async {
+          {List<String> idPath = const [],
+          bool keepClientOpen = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
 
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
@@ -162,6 +169,11 @@ class Loose {
 
     final res = await _client.get(uri);
 
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
+    }
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
@@ -179,7 +191,9 @@ class Loose {
   Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S,
           R extends QueryFields, Q extends QueryField>(
       Documenter<T, S, R> document, List<Q> updateFields,
-      {List<String> idPath = const [], bool printFields = false}) async {
+      {List<String> idPath = const [],
+      bool printFields = false,
+      bool keepClientOpen = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
@@ -207,6 +221,11 @@ class Loose {
     }
     final res = await _client.patch(uri, body: json.encode(reqBody));
 
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
+    }
+
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
@@ -224,7 +243,8 @@ class Loose {
   Future<LooseResponse<T, S>>
       delete<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
-          {List<String> idPath = const []}) async {
+          {List<String> idPath = const [],
+          bool keepClientOpen = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != idPath.length) {
@@ -240,6 +260,10 @@ class Loose {
     }
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final res = await _client.post(uri);
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
+    }
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
@@ -249,7 +273,8 @@ class Loose {
   // QUERY
   Future<LooseResponse<T, S>>
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
-          Query<T, S, R> query) async {
+          Query<T, S, R> query,
+          {bool keepClientOpen = false}) async {
     final rawBody = query.encode;
     final reqBody = json.encode(rawBody);
 
@@ -261,6 +286,10 @@ class Loose {
         '${_database.rootPath}${query.document.location.pathToCollection}:runQuery');
 
     final res = await _client.post(uri, body: reqBody);
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
+    }
     if (res.statusCode < 200 || res.statusCode > 299) {
       if (res.statusCode == 400) {
         final resBody = json.decode(res.body) as List<Object>;
