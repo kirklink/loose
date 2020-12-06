@@ -1,5 +1,6 @@
 enum FieldOp {
   equal,
+  notEqual,
   lessThan,
   lessThanOrEqual,
   greaterThan,
@@ -9,6 +10,7 @@ enum FieldOp {
 
 enum ListOp {
   isIn,
+  isNotIn,
   listContainsAny,
 }
 

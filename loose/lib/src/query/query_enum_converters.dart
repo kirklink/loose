@@ -1,10 +1,12 @@
-
 import 'package:loose/src/query/query_enums.dart';
 
 String convertFieldOperator(FieldOp op) {
-  switch(op) {
+  switch (op) {
     case FieldOp.equal:
       return 'EQUAL';
+      break;
+    case FieldOp.notEqual:
+      return 'NOT_EQUAL';
       break;
     case FieldOp.lessThan:
       return 'LESS_THAN';
@@ -28,9 +30,12 @@ String convertFieldOperator(FieldOp op) {
 }
 
 String convertListOperator(ListOp op) {
-  switch(op) {
+  switch (op) {
     case ListOp.isIn:
       return 'IN';
+      break;
+    case ListOp.isNotIn:
+      return 'NOT_IN';
       break;
     case ListOp.listContainsAny:
       return 'ARRAY_CONTAINS_ANY';
@@ -41,9 +46,8 @@ String convertListOperator(ListOp op) {
   }
 }
 
-
 String convertUnaryOperator(UnaryOp op) {
-  switch(op) {
+  switch (op) {
     case UnaryOp.isNaN:
       return 'IS_NAN';
       break;
@@ -57,7 +61,7 @@ String convertUnaryOperator(UnaryOp op) {
 }
 
 String convertDirection(Direction direction) {
-  switch(direction) {
+  switch (direction) {
     case Direction.asc:
       return 'ASCENDING';
       break;

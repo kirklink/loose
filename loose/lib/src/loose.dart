@@ -32,6 +32,7 @@ class Loose {
   LooseCredentials _creds;
   auth.AutoRefreshingAuthClient _client;
   FirestoreDatabase _database;
+  var _transactionId = '';
 
   Loose._(LooseCredentials credentials, FirestoreDatabase database) {
     _creds = credentials;
@@ -110,14 +111,17 @@ class Loose {
       await _createClient();
     }
 
-    Uri uri;
-    if (docId.isNotEmpty) {
-      uri = Uri.https(authority, '${_database.rootPath}${workingPath}',
-          {'documentId': docId});
-    } else {
-      uri = Uri.https(
-          authority, '${_database.rootPath}${document.location.path}');
+    final queryParameters = <String, String>{};
+    if (_transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': _transactionId});
     }
+
+    if (docId.isNotEmpty) {
+      queryParameters.addAll({'documentId': docId});
+    }
+
+    final uri = Uri.https(
+        authority, '${_database.rootPath}${workingPath}', queryParameters);
 
     final reqBody = document.toFirestoreFields();
     if (printFields) {
@@ -165,7 +169,13 @@ class Loose {
       await _createClient();
     }
 
-    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+    final queryParameters = <String, String>{};
+    if (_transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': _transactionId});
+    }
+
+    final uri = Uri.https(
+        authority, '${_database.rootPath}${workingPath}', queryParameters);
 
     final res = await _client.get(uri);
 
@@ -213,6 +223,10 @@ class Loose {
       params = params + '&updateMask.fieldPaths=' + field.name;
     }
 
+    if (_transactionId.isNotEmpty) {
+      params = params + '&transaction=' + _transactionId;
+    }
+
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final reqBody = document.toFirestoreFields();
 
@@ -258,7 +272,13 @@ class Loose {
     if (_client == null) {
       await _createClient();
     }
-    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+
+    final queryParameters = <String, String>{};
+    if (_transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': _transactionId});
+    }
+    final uri = Uri.https(
+        authority, '${_database.rootPath}${workingPath}', queryParameters);
     final res = await _client.post(uri);
     if (!keepClientOpen) {
       _client.close();
@@ -282,8 +302,15 @@ class Loose {
       await _createClient();
     }
 
-    final uri = Uri.https(authority,
-        '${_database.rootPath}${query.document.location.pathToCollection}:runQuery');
+    final queryParameters = <String, String>{};
+    if (_transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': _transactionId});
+    }
+
+    final uri = Uri.https(
+        authority,
+        '${_database.rootPath}${query.document.location.pathToCollection}:runQuery',
+        queryParameters);
 
     final res = await _client.post(uri, body: reqBody);
     if (!keepClientOpen) {
@@ -347,5 +374,44 @@ class Loose {
 
   void done() {
     _client.close();
+  }
+
+  Future<String> beginTransaction() async {
+    if (_transactionId.isNotEmpty) {
+      throw LooseException('A transactions has already been started.');
+    }
+    if (_client == null) {
+      await _createClient();
+    }
+    final uri = Uri.https(
+        authority, '${_database.rootPath}/documents:beginTransaction');
+    final res = await _client.post(uri);
+
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      return '';
+    }
+    final id = (json.decode(res.body) as Map<String, String>)['transaction'];
+    _transactionId = id;
+    return id;
+  }
+
+  Future<LooseResponse> commitTransaction() async {
+    if (_transactionId.isEmpty) {
+      throw LooseException(
+          'Cannot commit a transaction that has not been started');
+    }
+    if (_client == null) {
+      await _createClient();
+    }
+    final uri = Uri.https(
+        authority, '${_database.rootPath}/documents:beginTransaction');
+    final res = await _client.post(uri);
+
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      return null;
+    }
+    _transactionId = '';
   }
 }

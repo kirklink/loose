@@ -2,6 +2,7 @@ import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query_field.dart';
 import 'package:loose/src/query/query_enums.dart';
 import 'package:loose/src/query/query_enum_converters.dart';
+import 'package:loose/src/reference.dart';
 
 abstract class BaseFilter {
   final String _op;
@@ -38,21 +39,90 @@ class CompositeFilter extends BaseFilter {
 // }
 
 class Filter<T> extends BaseFilter {
-  final QueryField<T> _field;
+  QueryField<T> _field;
 
   final _comparables = <Map<String, Object>>[];
 
   bool _listOp = false;
   bool _unaryOp = false;
 
-  Filter.field(this._field, FieldOp op, T comparable)
+  Filter.stringField(StringField field, FieldOp op, String comparable)
       : super(convertFieldOperator(op)) {
-    _comparables.add(_field.compare(comparable));
+    _comparables.add(field.compare(comparable));
   }
 
-  Filter.unary(this._field, UnaryOp op) : super(convertUnaryOperator(op)) {
+  Filter.integerField(IntegerField field, FieldOp op, int comparable)
+      : super(convertFieldOperator(op)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.doubleField(DoubleField field, FieldOp op, double comparable)
+      : super(convertFieldOperator(op)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.boolField(BoolField field, FieldOp op, bool comparable)
+      : super(convertFieldOperator(op)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.dateTimeField(DateTimeField field, FieldOp op, DateTime comparable)
+      : super(convertFieldOperator(op)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.referenceField(ReferenceField field, FieldOp op, Reference comparable)
+      : super(convertFieldOperator(op)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.arrayContains(ArrayField<T> field, T comparable)
+      : super(convertFieldOperator(FieldOp.listContains)) {
+    _comparables.add(field.compare(comparable));
+  }
+
+  Filter.isIn(QueryField<T> field, List<T> comparables)
+      : super(convertListOperator(ListOp.isIn)) {
+    if (comparables.length > 10) {
+      throw LooseException(
+          'The comparables list cannot contain more than 10 elements.');
+    }
+    _listOp = true;
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+  }
+
+  Filter.isNotIn(QueryField<T> field, List<T> comparables)
+      : super(convertListOperator(ListOp.isNotIn)) {
+    if (comparables.length > 10) {
+      throw LooseException(
+          'The comparables list cannot contain more than 10 elements.');
+    }
+    _listOp = true;
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+  }
+
+  Filter.arrayContainsAnyOf(QueryField<T> field, List<T> comparables)
+      : super(convertListOperator(ListOp.listContainsAny)) {
+    if (comparables.length > 10) {
+      throw LooseException(
+          'The comparables list cannot contain more than 10 elements.');
+    }
+    _listOp = true;
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+  }
+
+  Filter.isNull(QueryField field)
+      : super(convertUnaryOperator(UnaryOp.isNull)) {
     _unaryOp = true;
   }
+
+  Filter.isNaN(QueryField field) : super(convertUnaryOperator(UnaryOp.isNaN)) {
+    _unaryOp = true;
+  }
+
+  // Filter.unary(this._field, UnaryOp op) : super(convertUnaryOperator(op)) {
+  //   _unaryOp = true;
+  // }
 
   Filter.list(this._field, ListOp op, List<T> comparables)
       : super(convertListOperator(op)) {

@@ -15,7 +15,7 @@ class StringField extends QueryField<String> {
   StringField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(String string) {
+  Map<String, String> compare(String string) {
     return {'stringValue': string};
   }
 }
@@ -24,7 +24,7 @@ class IntegerField extends QueryField<int> {
   IntegerField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(int integer) {
+  Map<String, String> compare(int integer) {
     return {'integerValue': integer.toString()};
   }
 }
@@ -33,7 +33,7 @@ class DoubleField extends QueryField<double> {
   DoubleField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(double float) {
+  Map<String, double> compare(double float) {
     return {'doubleValue': float};
   }
 }
@@ -42,7 +42,7 @@ class BoolField extends QueryField<bool> {
   BoolField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(bool boolean) {
+  Map<String, bool> compare(bool boolean) {
     return {'booleanValue': boolean};
   }
 }
@@ -51,7 +51,7 @@ class DateTimeField extends QueryField<DateTime> {
   DateTimeField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(DateTime datetime) {
+  Map<String, String> compare(DateTime datetime) {
     return {'timestampValue': datetime.toIso8601String()};
   }
 }
@@ -60,7 +60,7 @@ class ReferenceField extends QueryField<Reference> {
   ReferenceField(String name) : super(name);
 
   @override
-  Map<String, Object> compare(Reference reference) {
+  Map<String, String> compare(Reference reference) {
     return {'referenceValue': reference.toString()};
   }
 }
