@@ -295,7 +295,7 @@ class Loose {
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
           Query<T, S, R> query,
           {bool keepClientOpen = false}) async {
-    final rawBody = query.encode;
+    final rawBody = query.encode();
     final reqBody = json.encode(rawBody);
 
     if (_client == null) {

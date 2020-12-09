@@ -2,20 +2,32 @@ import 'package:loose/src/reference.dart';
 import 'package:loose/src/query/field_reference.dart';
 
 abstract class QueryField<T> {
-  FieldReference _field;
-  QueryField(String name) {
-    _field = FieldReference(name);
-  }
-  String get name => _field.name;
-  Map<String, String> get result => _field.encode;
+  final String name;
+  QueryField(this.name);
+  // String get name => _field.name;
+  Map<String, String> get fieldPath => {'fieldPath': name};
   Map<String, Object> compare(T comparable);
 }
 
-class StringField extends QueryField<String> {
+abstract class QueryCompare<T> {}
+
+// abstract class QuerySingleField<T> extends QueryField<T> {
+//   QuerySingleField(String name) : super(name);
+// }
+
+abstract class ValueQuery<T> extends QueryField<T> {
+  ValueQuery(String name) : super(name);
+}
+
+abstract class ArrayQuery<T> extends QueryField<T> {
+  ArrayQuery(String name) : super(name);
+}
+
+class StringField extends ValueQuery<String> {
   StringField(String name) : super(name);
 
   @override
-  Map<String, String> compare(String string) {
+  Map<String, Object> compare(String string) {
     return {'stringValue': string};
   }
 }
@@ -67,7 +79,7 @@ class ReferenceField extends QueryField<Reference> {
 
 typedef ValueMapper<T> = Map<String, Object> Function(T element);
 
-class ArrayField<T> extends QueryField<T> {
+class ArrayField<T> extends ArrayQuery<T> {
   final ValueMapper<T> _mapper;
 
   ArrayField(String name, this._mapper) : super(name);

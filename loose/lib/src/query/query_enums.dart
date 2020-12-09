@@ -14,12 +14,6 @@ enum ListOp {
   listContainsAny,
 }
 
-enum UnaryOp {
-  isNaN,
-  isNull
-}
+enum UnaryOp { isNaN, isNull }
 
-enum Direction {
-  asc,
-  dsc
-}
+enum SortDirection { asc, dsc }

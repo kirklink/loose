@@ -1,3 +1,4 @@
+import 'package:loose/annotations.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query_field.dart';
 import 'package:loose/src/query/query_enums.dart';
@@ -5,30 +6,10 @@ import 'package:loose/src/query/query_enum_converters.dart';
 import 'package:loose/src/reference.dart';
 
 abstract class BaseFilter {
-  final String _op;
-  BaseFilter(this._op);
-  Map<String, Object> get encode;
+  Map<String, Object> encode();
 }
 
-class CompositeFilter extends BaseFilter {
-  CompositeFilter() : super('AND');
-
-  final _filters = <BaseFilter>[];
-
-  void addFilter(BaseFilter filter) {
-    _filters.add(filter);
-  }
-
-  @override
-  Map<String, Object> get encode {
-    return {
-      'compositeFilter': {
-        'op': super._op,
-        'filters': _filters.map((e) => e.encode).toList()
-      }
-    };
-  }
-}
+abstract class FieldFilter implements BaseFilter {}
 
 // Aggregate filter
 // class DerivedFilter extends Filter {
@@ -37,128 +18,208 @@ class CompositeFilter extends BaseFilter {
 //   min
 //   etc
 // }
+abstract class Encoder {
+  Map<String, Object> encode(Map<String, String> fieldPath, String op,
+      List<Map<String, Object>> comparables);
+}
 
-class Filter<T> extends BaseFilter {
-  QueryField<T> _field;
+class FieldFilterEncoder implements Encoder {
+  @override
+  Map<String, Object> encode(Map<String, String> fieldPath, String op,
+      List<Map<String, Object>> comparables) {
+    return {
+      'fieldFilter': {'field': fieldPath, 'op': op, 'value': comparables[0]}
+    };
+  }
+}
 
+class UnaryFilterEncoder implements Encoder {
+  @override
+  Map<String, Object> encode(Map<String, String> fieldPath, String op,
+      List<Map<String, Object>> comparables) {
+    return {
+      'unaryFilter': {'field': fieldPath, 'op': op}
+    };
+  }
+}
+
+class ArrayFilterEncoder implements Encoder {
+  @override
+  Map<String, Object> encode(Map<String, String> fieldPath, String op,
+      List<Map<String, Object>> comparables) {
+    return {
+      'fieldFilter': {
+        'field': fieldPath,
+        'op': op,
+        'value': {
+          'arrayValue': {'values': comparables}
+        }
+      }
+    };
+  }
+}
+
+// class FilterResult {
+//   final Encoder _encoder;
+//   final String _op;
+//   final List<Map<String, Object>> _comparables;
+//   final Map<String, String> _fieldPath;
+
+//   FilterResult(this._fieldPath, this._op, this._encoder,
+//       [this._comparables = const []]);
+
+//   Map<String, Object> encode() {
+//     if (_encoder is FieldFilterEncoder) {
+//       return _encoder.encode(_fieldPath, _op, _comparables);
+//     } else if (_encoder is UnaryFilterEncoder) {
+//       return _encoder.encode(_fieldPath, _op, const []);
+//     } else if (_encoder is ArrayFilterEncoder) {
+//       return _encoder.encode(_fieldPath, _op, _comparables);
+//     } else {
+//       throw LooseException('A valid Encoder must be provided.');
+//     }
+//   }
+// }
+
+class ValueFilter<T> implements FieldFilter {
+  final ValueQuery<T> _field;
+  var _op = '';
   final _comparables = <Map<String, Object>>[];
+  Encoder _encoder;
 
-  bool _listOp = false;
-  bool _unaryOp = false;
-
-  Filter.stringField(StringField field, FieldOp op, String comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.integerField(IntegerField field, FieldOp op, int comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.doubleField(DoubleField field, FieldOp op, double comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.boolField(BoolField field, FieldOp op, bool comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.dateTimeField(DateTimeField field, FieldOp op, DateTime comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.referenceField(ReferenceField field, FieldOp op, Reference comparable)
-      : super(convertFieldOperator(op)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.arrayContains(ArrayField<T> field, T comparable)
-      : super(convertFieldOperator(FieldOp.listContains)) {
-    _comparables.add(field.compare(comparable));
-  }
-
-  Filter.isIn(QueryField<T> field, List<T> comparables)
-      : super(convertListOperator(ListOp.isIn)) {
-    if (comparables.length > 10) {
-      throw LooseException(
-          'The comparables list cannot contain more than 10 elements.');
-    }
-    _listOp = true;
-    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
-  }
-
-  Filter.isNotIn(QueryField<T> field, List<T> comparables)
-      : super(convertListOperator(ListOp.isNotIn)) {
-    if (comparables.length > 10) {
-      throw LooseException(
-          'The comparables list cannot contain more than 10 elements.');
-    }
-    _listOp = true;
-    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
-  }
-
-  Filter.arrayContainsAnyOf(QueryField<T> field, List<T> comparables)
-      : super(convertListOperator(ListOp.listContainsAny)) {
-    if (comparables.length > 10) {
-      throw LooseException(
-          'The comparables list cannot contain more than 10 elements.');
-    }
-    _listOp = true;
-    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
-  }
-
-  Filter.isNull(QueryField field)
-      : super(convertUnaryOperator(UnaryOp.isNull)) {
-    _unaryOp = true;
-  }
-
-  Filter.isNaN(QueryField field) : super(convertUnaryOperator(UnaryOp.isNaN)) {
-    _unaryOp = true;
-  }
-
-  // Filter.unary(this._field, UnaryOp op) : super(convertUnaryOperator(op)) {
-  //   _unaryOp = true;
-  // }
-
-  Filter.list(this._field, ListOp op, List<T> comparables)
-      : super(convertListOperator(op)) {
-    if (comparables.length > 10) {
-      throw LooseException(
-          'The comparables list cannot contain more than 10 elements.');
-    }
-    _listOp = true;
-    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
-  }
+  ValueFilter(this._field);
 
   @override
-  Map<String, Object> get encode {
-    if (_unaryOp) {
-      return {
-        'unaryFilter': {'field': _field.result, 'op': super._op}
-      };
-    } else if (_listOp) {
-      // final array = fs.Value().arrayValue.values = _comparables;
-      return {
-        'fieldFilter': {
-          'field': _field.result,
-          'op': super._op,
-          'value': {
-            'arrayValue': {'values': _comparables}
-          }
-        }
-      };
-    } else {
-      return {
-        'fieldFilter': {
-          'field': _field.result,
-          'op': super._op,
-          'value': _comparables[0]
-        }
-      };
-    }
+  Map<String, Object> encode() {
+    return _encoder.encode(_field.fieldPath, _op, _comparables);
+  }
+
+  ValueFilter<T> compare(FieldOp op, T comparable) {
+    _op = convertFieldOperator(op);
+    _comparables.add(_field.compare(comparable));
+    _encoder = FieldFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, FieldFilterEncoder(), _comparables);
+  }
+
+  ValueFilter<T> equals(T comparable) {
+    return compare(FieldOp.equal, comparable);
+  }
+
+  ValueFilter<T> doesNotEqual(T comparable) {
+    return compare(FieldOp.notEqual, comparable);
+  }
+
+  ValueFilter<T> isLessThan(T comparable) {
+    return compare(FieldOp.lessThan, comparable);
+  }
+
+  ValueFilter<T> isLessThanOrEquals(T comparable) {
+    return compare(FieldOp.lessThanOrEqual, comparable);
+  }
+
+  ValueFilter<T> isGreaterThan(T comparable) {
+    return compare(FieldOp.greaterThan, comparable);
+  }
+
+  ValueFilter<T> isGreaterThanOrEquals(T comparable) {
+    return compare(FieldOp.equal, comparable);
+  }
+
+  ValueFilter<T> isNaN() {
+    _op = convertUnaryOperator(UnaryOp.isNaN);
+    _encoder = UnaryFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, UnaryFilterEncoder(), _comparables);
+  }
+
+  ValueFilter<T> isNull() {
+    _op = convertUnaryOperator(UnaryOp.isNull);
+    _encoder = UnaryFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, UnaryFilterEncoder(), _comparables);
+  }
+
+  ValueFilter<T> isIn(List<T> comparables) {
+    _op = convertListOperator(ListOp.isIn);
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+    _encoder = ArrayFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, ArrayFilterEncoder(), _comparables);
+  }
+
+  ValueFilter<T> isNotIn(List<T> comparables) {
+    _op = convertListOperator(ListOp.isNotIn);
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+    _encoder = ArrayFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, ArrayFilterEncoder(), _comparables);
+  }
+}
+
+class ArrayFilter<T> implements FieldFilter {
+  final ArrayQuery<T> _field;
+  var _op = '';
+  final _comparables = <Map<String, Object>>[];
+  Encoder _encoder;
+
+  ArrayFilter(this._field);
+
+  @override
+  Map<String, Object> encode() {
+    return _encoder.encode(_field.fieldPath, _op, _comparables);
+  }
+
+  ArrayFilter<T> contains(T comparable) {
+    _op = convertFieldOperator(FieldOp.listContains);
+    _comparables.add(_field.compare(comparable));
+    _encoder = FieldFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, FieldFilterEncoder(), _comparables);
+  }
+
+  ArrayFilter<T> containsAnyOf(List<T> comparables) {
+    _op = convertListOperator(ListOp.listContainsAny);
+    _comparables.addAll(comparables.map((e) => _field.compare(e)).toList());
+    _encoder = ArrayFilterEncoder();
+    return this;
+    // return FilterResult(
+    //     _field.fieldPath, _op, ArrayFilterEncoder(), _comparables);
+  }
+}
+
+class CompositeFilter implements BaseFilter {
+  final List<BaseFilter> _filters;
+
+  CompositeFilter(this._filters);
+
+  @override
+  Map<String, Object> encode() {
+    return {
+      'compositeFilter': {
+        'op': 'AND',
+        'filters': _filters.map((e) => e.encode()).toList()
+      }
+    };
+  }
+}
+
+class Filter {
+  static ValueFilter<T> value<T>(ValueQuery<T> field) {
+    return ValueFilter(field);
+  }
+
+  static ArrayFilter<T> array<T>(ArrayField<T> field) {
+    return ArrayFilter(field);
+  }
+
+  static CompositeFilter composite(List<FieldFilter> filters) {
+    return CompositeFilter(filters);
   }
 }

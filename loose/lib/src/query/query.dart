@@ -24,6 +24,8 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
     _filter = filter;
   }
 
+  // Filter filter = Filter();
+
   void orderBy(Order order) {
     _orders.add(order);
   }
@@ -44,13 +46,13 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
     _offset = value;
   }
 
-  Map<String, Object> get encode {
+  Map<String, Object> encode() {
     return {
       'structuredQuery': {
         'from': [
           {'collectionId': document.location.collection}
         ],
-        'where': _filter?.encode,
+        'where': _filter?.encode() ?? const {},
         'orderBy': _orders.map((e) => e.encode).toList(),
         'offset': _offset,
         'limit': _limit,
