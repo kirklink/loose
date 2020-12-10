@@ -5,11 +5,11 @@ import 'package:loose/src/query/query_enums.dart';
 import 'package:loose/src/query/query_enum_converters.dart';
 import 'package:loose/src/reference.dart';
 
-abstract class BaseFilter {
-  Map<String, Object> encode();
-}
+// abstract class BaseFilter {
+//   Map<String, Object> encode();
+// }
 
-abstract class FieldFilter implements BaseFilter {}
+abstract class FieldFilter implements Filter {}
 
 // Aggregate filter
 // class DerivedFilter extends Filter {
@@ -59,28 +59,6 @@ class ArrayFilterEncoder implements Encoder {
   }
 }
 
-// class FilterResult {
-//   final Encoder _encoder;
-//   final String _op;
-//   final List<Map<String, Object>> _comparables;
-//   final Map<String, String> _fieldPath;
-
-//   FilterResult(this._fieldPath, this._op, this._encoder,
-//       [this._comparables = const []]);
-
-//   Map<String, Object> encode() {
-//     if (_encoder is FieldFilterEncoder) {
-//       return _encoder.encode(_fieldPath, _op, _comparables);
-//     } else if (_encoder is UnaryFilterEncoder) {
-//       return _encoder.encode(_fieldPath, _op, const []);
-//     } else if (_encoder is ArrayFilterEncoder) {
-//       return _encoder.encode(_fieldPath, _op, _comparables);
-//     } else {
-//       throw LooseException('A valid Encoder must be provided.');
-//     }
-//   }
-// }
-
 class ValueFilter<T> implements FieldFilter {
   final ValueQuery<T> _field;
   var _op = '';
@@ -91,6 +69,10 @@ class ValueFilter<T> implements FieldFilter {
 
   @override
   Map<String, Object> encode() {
+    if (_encoder == null) {
+      throw LooseException(
+          'Cannot encode a filter until the comparison is set.');
+    }
     return _encoder.encode(_field.fieldPath, _op, _comparables);
   }
 
@@ -172,6 +154,9 @@ class ArrayFilter<T> implements FieldFilter {
 
   @override
   Map<String, Object> encode() {
+    if (_encoder == null) {
+      throw LooseException('Cannot encode a filter until the operator is set.');
+    }
     return _encoder.encode(_field.fieldPath, _op, _comparables);
   }
 
@@ -194,8 +179,8 @@ class ArrayFilter<T> implements FieldFilter {
   }
 }
 
-class CompositeFilter implements BaseFilter {
-  final List<BaseFilter> _filters;
+class CompositeFilter implements Filter {
+  final List<FieldFilter> _filters;
 
   CompositeFilter(this._filters);
 
@@ -210,7 +195,9 @@ class CompositeFilter implements BaseFilter {
   }
 }
 
-class Filter {
+abstract class Filter {
+  Map<String, Object> encode();
+
   static ValueFilter<T> value<T>(ValueQuery<T> field) {
     return ValueFilter(field);
   }

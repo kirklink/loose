@@ -5,7 +5,7 @@ import 'package:loose/src/query/filter.dart';
 import 'package:loose/src/query/order.dart';
 
 class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
-  BaseFilter _filter;
+  Filter _filter;
   final _orders = <Order>[];
   int _limit;
   int _offset;
@@ -16,7 +16,7 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
 
   R get fields => document.queryFields;
 
-  void filter(BaseFilter filter) {
+  void filter(Filter filter) {
     if (_filter != null) {
       throw LooseException(
           'Attempting to change a filter which has already been set.');

@@ -1,6 +1,11 @@
 # Loose Changelog
 
 
+## 0.0.64
+- Add transaction support
+- Improve filter API
+- Improve query internals
+
 ## 0.0.62
 - Update id field name again
 

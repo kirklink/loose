@@ -4,16 +4,9 @@ import 'package:loose/src/query/field_reference.dart';
 abstract class QueryField<T> {
   final String name;
   QueryField(this.name);
-  // String get name => _field.name;
   Map<String, String> get fieldPath => {'fieldPath': name};
   Map<String, Object> compare(T comparable);
 }
-
-abstract class QueryCompare<T> {}
-
-// abstract class QuerySingleField<T> extends QueryField<T> {
-//   QuerySingleField(String name) : super(name);
-// }
 
 abstract class ValueQuery<T> extends QueryField<T> {
   ValueQuery(String name) : super(name);
@@ -32,7 +25,7 @@ class StringField extends ValueQuery<String> {
   }
 }
 
-class IntegerField extends QueryField<int> {
+class IntegerField extends ValueQuery<int> {
   IntegerField(String name) : super(name);
 
   @override
@@ -41,7 +34,7 @@ class IntegerField extends QueryField<int> {
   }
 }
 
-class DoubleField extends QueryField<double> {
+class DoubleField extends ValueQuery<double> {
   DoubleField(String name) : super(name);
 
   @override
@@ -50,7 +43,7 @@ class DoubleField extends QueryField<double> {
   }
 }
 
-class BoolField extends QueryField<bool> {
+class BoolField extends ValueQuery<bool> {
   BoolField(String name) : super(name);
 
   @override
@@ -59,7 +52,7 @@ class BoolField extends QueryField<bool> {
   }
 }
 
-class DateTimeField extends QueryField<DateTime> {
+class DateTimeField extends ValueQuery<DateTime> {
   DateTimeField(String name) : super(name);
 
   @override
@@ -68,7 +61,7 @@ class DateTimeField extends QueryField<DateTime> {
   }
 }
 
-class ReferenceField extends QueryField<Reference> {
+class ReferenceField extends ValueQuery<Reference> {
   ReferenceField(String name) : super(name);
 
   @override

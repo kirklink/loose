@@ -1,5 +1,5 @@
-import 'dart:convert' show json;
-
+import 'dart:convert' show json, base64;
+import 'dart:math';
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:loose/schema.dart';
 // import 'package:googleapis/firestore/v1.dart' as fs;
@@ -11,6 +11,7 @@ import 'package:loose/src/loose_response.dart';
 import 'package:loose/src/reference.dart';
 import 'package:loose/src/firestore_database.dart';
 import 'package:loose/src/constants.dart';
+import 'package:loose/src/write.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 import 'package:loose/src/query/query_field.dart';
@@ -33,6 +34,7 @@ class Loose {
   auth.AutoRefreshingAuthClient _client;
   FirestoreDatabase _database;
   var _transactionId = '';
+  var _previousTransactionId = '';
 
   Loose._(LooseCredentials credentials, FirestoreDatabase database) {
     _creds = credentials;
@@ -55,10 +57,9 @@ class Loose {
 
   static Loose _cache;
 
-  Future _createClient() async {
+  Future<auth.AutoRefreshingAuthClient> _createClient() async {
     if (_creds.fromApplicationDefault) {
-      _client =
-          await auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
+      return auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
     } else {
       final jsonCreds = auth.ServiceAccountCredentials.fromJson({
         'private_key_id': _creds.privateKeyId,
@@ -67,12 +68,19 @@ class Loose {
         'client_id': _creds.clientId,
         'type': _creds.type
       });
-      _client = await auth.clientViaServiceAccount(jsonCreds, _SCOPES);
+      return auth.clientViaServiceAccount(jsonCreds, _SCOPES);
     }
   }
 
   Reference reference(Documenter document, {List<String> idPath = const []}) {
     return Reference(document, _database, idPath: idPath);
+  }
+
+  void done() {
+    if (_client != null) {
+      _client.close();
+      _client = null;
+    }
   }
 
   // CREATE
@@ -107,14 +115,12 @@ class Loose {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
 
-    if (_client == null) {
-      await _createClient();
-    }
+    _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty) {
-      queryParameters.addAll({'transaction': _transactionId});
-    }
+    // if (_transactionId.isNotEmpty) {
+    //   queryParameters.addAll({'transaction': _transactionId});
+    // }
 
     if (docId.isNotEmpty) {
       queryParameters.addAll({'documentId': docId});
@@ -153,7 +159,8 @@ class Loose {
       read<T extends DocumentShell<S>, S, R extends QueryFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
-          bool keepClientOpen = false}) async {
+          bool keepClientOpen = false,
+          bool bypassTransaction = false}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
 
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
@@ -165,18 +172,16 @@ class Loose {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
 
-    if (_client == null) {
-      await _createClient();
-    }
+    _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty) {
+    if (_transactionId.isNotEmpty && !bypassTransaction) {
       queryParameters.addAll({'transaction': _transactionId});
     }
 
     final uri = Uri.https(
         authority, '${_database.rootPath}${workingPath}', queryParameters);
-
+    print(uri);
     final res = await _client.get(uri);
 
     if (!keepClientOpen) {
@@ -214,9 +219,7 @@ class Loose {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
 
-    if (_client == null) {
-      await _createClient();
-    }
+    _client ??= await _createClient();
 
     var params = '?currentDocument.exists=true';
     for (final field in updateFields) {
@@ -269,14 +272,12 @@ class Loose {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
 
-    if (_client == null) {
-      await _createClient();
-    }
+    _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty) {
-      queryParameters.addAll({'transaction': _transactionId});
-    }
+    // if (_transactionId.isNotEmpty) {
+    //   queryParameters.addAll({'transaction': _transactionId});
+    // }
     final uri = Uri.https(
         authority, '${_database.rootPath}${workingPath}', queryParameters);
     final res = await _client.post(uri);
@@ -294,16 +295,15 @@ class Loose {
   Future<LooseResponse<T, S>>
       query<T extends DocumentShell<S>, S, R extends QueryFields>(
           Query<T, S, R> query,
-          {bool keepClientOpen = false}) async {
+          {bool keepClientOpen = false,
+          bool bypassTransaction = false}) async {
     final rawBody = query.encode();
     final reqBody = json.encode(rawBody);
 
-    if (_client == null) {
-      await _createClient();
-    }
+    _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty) {
+    if (_transactionId.isNotEmpty && !bypassTransaction) {
       queryParameters.addAll({'transaction': _transactionId});
     }
 
@@ -323,8 +323,9 @@ class Loose {
         for (final errorObject in resBody) {
           final error = (errorObject as Map<String, Object>)['error']
               as Map<String, Object>;
-          if ((error['message'] as String)
-              .startsWith('The query requires an index.')) {
+          if ((error['status'] as String) == 'FAILED_PRECONDITION') {
+            throw LooseException((error['message'] as String));
+          } else if ((error['status'] as String) == 'INVALID_ARGUMENT') {
             throw LooseException((error['message'] as String));
           }
         }
@@ -340,6 +341,23 @@ class Loose {
 //   }
 // }
 // ]
+
+// [{
+//   "error": {
+//     "code": 400,
+//     "message": "inequality filter property and first sort order must be the same: integer and nested.innerString",
+//     "status": "INVALID_ARGUMENT"
+//   }
+// }
+// ]
+
+// [{
+//   "error": {
+//     "code": 400,
+//     "message": "order by clause cannot contain a field with an equality filter nested.innerString",
+//     "status": "INVALID_ARGUMENT"
+//   }
+// }
 
     final decoded = json.decode(res.body);
 
@@ -372,46 +390,62 @@ class Loose {
     }
   }
 
-  void done() {
-    _client.close();
-  }
-
   Future<String> beginTransaction() async {
     if (_transactionId.isNotEmpty) {
       throw LooseException('A transactions has already been started.');
     }
-    if (_client == null) {
-      await _createClient();
-    }
-    final uri = Uri.https(
-        authority, '${_database.rootPath}/documents:beginTransaction');
+    _client ??= await _createClient();
+    final uri = Uri.https(authority, '${_database.rootPath}:beginTransaction');
     final res = await _client.post(uri);
 
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
       return '';
     }
-    final id = (json.decode(res.body) as Map<String, String>)['transaction'];
+    final id =
+        (json.decode(res.body) as Map<String, Object>)['transaction'] as String;
     _transactionId = id;
     return id;
   }
 
-  Future<LooseResponse> commitTransaction() async {
+  Future commitTransaction(
+      {List<Writable> writes = const [], bool keepClientOpen = false}) async {
     if (_transactionId.isEmpty) {
       throw LooseException(
           'Cannot commit a transaction that has not been started');
     }
-    if (_client == null) {
-      await _createClient();
+    _client ??= await _createClient();
+    final body = {
+      'transaction': _transactionId,
+      'writes': await Future.wait(writes
+          .map((e) async => (await e.encode(_database.documentRoot)))
+          .toList())
+    };
+    final uri = Uri.https(authority, '${_database.rootPath}:commit');
+    final res = await _client.post(uri, body: json.encode(body));
+    if (!keepClientOpen) {
+      _client.close();
+      _client = null;
     }
-    final uri = Uri.https(
-        authority, '${_database.rootPath}/documents:beginTransaction');
-    final res = await _client.post(uri);
-
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
       return null;
     }
+    _previousTransactionId = _transactionId;
     _transactionId = '';
+  }
+
+  Future rollbackTransaction() async {
+    if (_previousTransactionId.isEmpty) {
+      throw LooseException('There is no committed transaction to rollback.');
+    }
+    _client ??= await _createClient();
+    final body = json.encode({'transaction': _previousTransactionId});
+    final uri = Uri.https(authority, '${_database.rootPath}:rollback');
+    final res = await _client.post(uri, body: body);
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      return null;
+    }
   }
 }

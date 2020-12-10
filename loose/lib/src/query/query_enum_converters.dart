@@ -60,12 +60,12 @@ String convertUnaryOperator(UnaryOp op) {
   }
 }
 
-String convertDirection(SortDirection direction) {
+String convertDirection(Direction direction) {
   switch (direction) {
-    case SortDirection.asc:
+    case Direction.asc:
       return 'ASCENDING';
       break;
-    case SortDirection.dsc:
+    case Direction.dsc:
       return 'DESCENDING';
       break;
     default:

@@ -6,4 +6,5 @@ export 'src/query/query_enums.dart';
 export 'src/query/filter.dart';
 export 'src/query/order.dart';
 export 'src/reference.dart';
-export 'src/update_mask.dart';
+export 'src/write.dart';
+// export 'src/update_mask.dart';
