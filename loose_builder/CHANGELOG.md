@@ -1,6 +1,11 @@
 # Loose Builder Changelog
 
 
+## 0.0.63
+- Add transaction support
+- Improve filter API
+- Improve query internals
+
 ## 0.0.62
 - Update id field name again
 

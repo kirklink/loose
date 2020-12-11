@@ -1,7 +1,7 @@
 # Loose Changelog
 
 
-## 0.0.64
+## 0.0.63
 - Add transaction support
 - Improve filter API
 - Improve query internals
