@@ -37,13 +37,42 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
 
   for (final klass in classElements) {
     for (final field in klass.fields) {
+      var name = field.name;
+      var getterName = '';
+      if (field.isPrivate) {
+        if (!_checkForLooseField.hasAnnotationOfExact(field)) {
+          print(
+              'WARNING: Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+        } else {
+          final reader =
+              ConstantReader(_checkForLooseField.firstAnnotationOf(field));
+          final getter = reader.peek('getter')?.stringValue ?? '';
+          if (getter.isEmpty) {
+            print(
+                'WARNING: Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+          } else {
+            getterName = getter;
+          }
+        }
+      } else {
+        if (_checkForLooseField.hasAnnotationOfExact(field)) {
+          final reader =
+              ConstantReader(_checkForLooseField.firstAnnotationOf(field));
+          final getter = reader.peek('getter')?.stringValue ?? '';
+          if (getter.isNotEmpty) {
+            throw LooseBuilderException(
+                'Field "${field.name}" is not private and should not be annoted with "getter" without being ignored.');
+          }
+        }
+      }
       if (field.isStatic || field.isSynthetic) {
         continue;
       }
+
       if (usesIdentifier(clazz) && (field.name == documentIdFieldName)) {
         continue;
       }
-      var name = field.name;
+
       name = recaseFieldName(recase, name);
       // if (field.isPrivate) {
       //   name = name.replaceFirst('_', '');
@@ -96,10 +125,10 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
         }
       }
 
-      var inheritedName = name;
+      var inheritedName = getterName.isNotEmpty ? getterName : name;
       var inheritedNameDisplay = field.name;
       if (parent.isNotEmpty) {
-        inheritedName = '$parent?.$name';
+        inheritedName = '$parent?.${getterName.isNotEmpty ? getterName : name}';
         inheritedNameDisplay = '$parent.$name';
       }
       // final inheritedNameDisplay = inheritedName.replaceAll('?', '');

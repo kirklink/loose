@@ -1,6 +1,10 @@
 # Loose Builder Changelog
 
 
+## 0.0.64
+- Add getter annotation for private fields
+- Require transaction id for rollback
+
 ## 0.0.63
 - Add transaction support
 - Improve filter API

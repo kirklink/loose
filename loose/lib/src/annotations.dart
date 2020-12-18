@@ -42,6 +42,7 @@ class LooseField {
   final bool readonlyNull;
   final bool ignoreIfNested;
   final bool ignoreInLists;
+  final String getter;
   const LooseField(
       {this.name = '',
       this.readOnly = false,
@@ -51,7 +52,8 @@ class LooseField {
       this.useDefaultValue,
       this.readonlyNull,
       this.ignoreIfNested,
-      this.ignoreInLists});
+      this.ignoreInLists,
+      this.getter = ''});
 }
 
 class LooseMap {

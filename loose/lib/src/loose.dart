@@ -34,7 +34,6 @@ class Loose {
   auth.AutoRefreshingAuthClient _client;
   FirestoreDatabase _database;
   var _transactionId = '';
-  var _previousTransactionId = '';
 
   Loose._(LooseCredentials credentials, FirestoreDatabase database) {
     _creds = credentials;
@@ -431,16 +430,12 @@ class Loose {
       // TODO: Handle failed transaction
       return null;
     }
-    _previousTransactionId = _transactionId;
     _transactionId = '';
   }
 
-  Future rollbackTransaction() async {
-    if (_previousTransactionId.isEmpty) {
-      throw LooseException('There is no committed transaction to rollback.');
-    }
+  Future rollbackTransaction(String transactionId) async {
     _client ??= await _createClient();
-    final body = json.encode({'transaction': _previousTransactionId});
+    final body = json.encode({'transaction': transactionId});
     final uri = Uri.https(authority, '${_database.rootPath}:rollback');
     final res = await _client.post(uri, body: body);
     if (res.statusCode < 200 || res.statusCode > 299) {

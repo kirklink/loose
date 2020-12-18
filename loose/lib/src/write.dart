@@ -32,11 +32,11 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends QueryFields,
   WriteCreate(Documenter<T, S, R> document,
       {List<String> idPath = const [],
       bool autoAssignId = false,
-      Loose loose}) {
+      Loose checkIdWith}) {
     _autoAssignId = autoAssignId;
     _idPath = idPath;
     _document = document;
-    _loose = loose;
+    _loose = checkIdWith;
   }
 
   @override
@@ -71,9 +71,10 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends QueryFields,
       document.addAll({'name': '${databaseRoot}${workingPath}/${docId}'});
     } else {
       var tryAgain = false;
-      var documentName = '${databaseRoot}${workingPath}/${_generateId()}';
+      var documentName = '';
       if (_loose != null) {
         do {
+          documentName = '${databaseRoot}${workingPath}/${_generateId()}';
           final path = List<String>.from(_idPath, growable: true)
             ..add(documentName);
           final r = await _loose.read(_document,
@@ -162,9 +163,9 @@ class Write {
           Q extends QueryField>(Documenter<T, S, R> document,
       {List<String> idPath = const [],
       bool autoAssignId = false,
-      Loose loose}) {
+      Loose checkIdWith}) {
     return WriteCreate(document,
-        idPath: idPath, autoAssignId: autoAssignId, loose: loose);
+        idPath: idPath, autoAssignId: autoAssignId, checkIdWith: checkIdWith);
   }
 
   static WriteUpdate<T, S, R, Q> update<T extends DocumentShell<S>, S,
