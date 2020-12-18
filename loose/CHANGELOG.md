@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.65
+- Allow build warning suppression
+
 ## 0.0.64
 - Add getter annotation for private fields
 - Require transaction id for rollback

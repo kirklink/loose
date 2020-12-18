@@ -19,7 +19,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
 }
 
 String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
-    bool globalUseDefaultValues,
+    bool globalUseDefaultValues, bool suppressWarnings,
     {String parent = '',
     bool parentAllowNull = false,
     int nestLevel = 0,
@@ -41,15 +41,19 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       var getterName = '';
       if (field.isPrivate) {
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
-          print(
-              'WARNING: Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+          if (!suppressWarnings) {
+            print(
+                '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+          }
         } else {
           final reader =
               ConstantReader(_checkForLooseField.firstAnnotationOf(field));
           final getter = reader.peek('getter')?.stringValue ?? '';
           if (getter.isEmpty) {
-            print(
-                'WARNING: Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+            if (!suppressWarnings) {
+              print(
+                  '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+            }
           } else {
             getterName = getter;
           }
@@ -196,7 +200,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
           nestLevel = nestLevel + 1;
         }
         classBuffer.write(
-            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, childAllowNulls, childUseDefaultValues, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, childAllowNulls, childUseDefaultValues, suppressWarnings, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
         // List
       } else if (field.type.isDartCoreList) {
         final elementTypes = _getGenericTypes(field.type);
@@ -260,7 +264,7 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
             childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
           }
           listBuf.write(
-              "ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
+              "ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
         }
         listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
         classBuffer.writeln(listBuf.toString());

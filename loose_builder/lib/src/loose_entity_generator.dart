@@ -77,6 +77,9 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
           'allowNull and useDefaultValues should not be used together on ${element.name}.');
     }
 
+    final suppressWarnings =
+        annotation.peek('suppressWarning')?.boolValue ?? false;
+
     var name = annotation.peek('document').peek('name').stringValue;
     var parent = annotation.peek('document').peek('parent');
     var collection = parent.peek('name').stringValue;
@@ -144,8 +147,8 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('final e = entity;');
     classBuf.write("return {'fields': ");
     // toFields
-    final converted =
-        convertToFirestore(element, recase, allowNulls, useDefaultValues);
+    final converted = convertToFirestore(
+        element, recase, allowNulls, useDefaultValues, suppressWarnings);
     classBuf.writeln(converted);
     classBuf.writeln('};}');
     // !toFields

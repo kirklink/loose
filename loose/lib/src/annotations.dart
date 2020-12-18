@@ -13,12 +13,14 @@ class LooseDocument {
   final bool allowNulls;
   final bool useDefaultValues;
   final bool readonlyNulls;
+  final bool suppressWarnings;
   const LooseDocument(
     this.document, {
     this.useCase = Case.none,
     this.allowNulls = false,
     this.useDefaultValues = false,
     this.readonlyNulls = false,
+    this.suppressWarnings = false,
   });
 }
 
@@ -60,11 +62,13 @@ class LooseMap {
   final bool allowNulls;
   final bool useDefaultValues;
   final bool readonlyNulls;
+  final bool suppressWarnings;
 
   const LooseMap(
       {this.allowNulls = false,
       this.useDefaultValues = false,
-      this.readonlyNulls = false});
+      this.readonlyNulls = false,
+      this.suppressWarnings = false});
 }
 
 // class LooseReference {
