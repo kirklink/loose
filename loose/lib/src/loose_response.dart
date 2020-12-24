@@ -93,7 +93,7 @@ class LooseResponse<T extends DocumentShell<S>, S> {
     return _shell;
   }
 
-  List<T> get list {
+  List<T> get documents {
     _listMethod();
     if (!ok) {
       throw LooseException(
