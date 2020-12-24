@@ -252,7 +252,17 @@ class WriteCounter implements Writable {
 
   @override
   Future<Map<String, Object>> encode([String databaseRoot = '']) async {
-    return _shard.documentTransform(databaseRoot);
+    return {
+      'transform': {
+        'document': '${databaseRoot}${_shard.documentPath}',
+        'fieldTransforms': [
+          {
+            'fieldPath': '${_shard.fieldPath}',
+            'increment': {'integerValue': _shard.increment.toString()}
+          }
+        ]
+      }
+    };
   }
 }
 
@@ -391,14 +401,22 @@ class FieldTransform {
 class Counter {
   final Document _document;
   final int _numShards;
-  final String _fieldPath = 'c';
+  final String fieldPath = 'c';
 
-  const Counter(this._document, this._numShards);
+  List<String> get shards {
+    final paths = <String>[];
+    for (var i = 0; i < _numShards; i++) {
+      paths.add('${_document.path}/shards/$i');
+    }
+    return paths;
+  }
 
-  // factory Counter(Document document, [int maxShards = 1]) {
-  //   return _counters.putIfAbsent(
-  //       document.path, () => Counter._(document, maxShards));
-  // }
+  Counter._(this._document, this._numShards);
+
+  factory Counter(Document document, [int numShards = 1]) {
+    return _counters.putIfAbsent(
+        document.path, () => Counter._(document, numShards));
+  }
 
   int _getId() {
     final random = Random();
@@ -407,59 +425,20 @@ class Counter {
 
   Shard increase([int by = 1]) {
     final id = _getId();
-    return Shard('${_document.path}/shards/$id', _fieldPath, by);
+    return Shard('${_document.path}/shards/$id', fieldPath, by);
   }
 
   Shard decrease([int by = 1]) {
     final id = _getId();
-    return Shard('${_document.path}/shards/$id', _fieldPath, (by * -1));
-  }
-
-  Future<int> read(Loose loose, {bool ownTransaction = true}) async {
-    final paths = <String>[];
-    for (var i = 0; i < _numShards; i++) {
-      paths.add('${loose.documentRoot}${_document.path}/shards/$i');
-    }
-    final shards = await loose.batchGetFromPaths(paths,
-        ownTransaction: ownTransaction, keepClientOpen: loose.hasOpenClient);
-    var result = 0;
-
-    shards.forEach((e) {
-      if ((e as Map<String, Object>).containsKey('found')) {
-        final doc = (e as Map<String, Object>)['found'];
-        final fields = (doc as Map<String, Object>)['fields'];
-        final field = (fields as Map<String, Object>)[_fieldPath];
-        final value = int.tryParse(
-            (field as Map<String, Object>)['integerValue'] as String);
-        if (value == null) {
-          return null;
-        } else {
-          result = result + value;
-        }
-      }
-    });
-
-    return result;
+    return Shard('${_document.path}/shards/$id', fieldPath, (by * -1));
   }
 
   static final _counters = <String, Counter>{};
 }
 
 class Shard {
-  final String _location;
-  final String _fieldPath;
-  final int _increment;
-  const Shard(this._location, this._fieldPath, this._increment);
-
-  Map<String, Object> documentTransform(String databaseRoot) => {
-        'transform': {
-          'document': '${databaseRoot}${_location}',
-          'fieldTransforms': [
-            {
-              'fieldPath': _fieldPath,
-              'increment': {'integerValue': _increment.toString()}
-            }
-          ]
-        }
-      };
+  final String documentPath;
+  final String fieldPath;
+  final int increment;
+  Shard(this.documentPath, this.fieldPath, this.increment);
 }

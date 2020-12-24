@@ -250,10 +250,6 @@ class Loose {
       params = params + '&updateMask.fieldPaths=' + field.name;
     }
 
-    if (_transactionId.isNotEmpty) {
-      params = params + '&transaction=' + _transactionId;
-    }
-
     final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
     final reqBody = document.toFirestoreFields();
 
@@ -497,7 +493,6 @@ class Loose {
           .toList())
     };
     final uri = Uri.https(authority, '${_database.rootPath}:batchWrite');
-    print(uri);
     final res = await _client.post(uri, body: json.encode(body));
     if (!keepClientOpen) {
       _client.close();
@@ -505,12 +500,8 @@ class Loose {
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
-      print('commit fail');
-      print(res.statusCode);
-      print(res.body);
       return BatchWriteResults.empty;
     }
-    print(res.body);
     final resBody = json.decode(res.body) as Map<String, Object>;
     return BatchWriteResults(writes, resBody);
   }
@@ -540,7 +531,7 @@ class Loose {
       documentPaths.add('${_database.documentRoot}${workingPath}');
     }
 
-    final decoded = await batchGetFromPaths(documentPaths,
+    final decoded = await _batchGetFromPaths(documentPaths,
         ownTransaction: ownTransaction,
         bypassTransaction: bypassTransaction,
         keepClientOpen: keepClientOpen);
@@ -569,7 +560,7 @@ class Loose {
 // batchGetFromPaths
 /////////////////////////
 
-  Future<List> batchGetFromPaths(List<String> documentPaths,
+  Future<List> _batchGetFromPaths(List<String> documentPaths,
       {bool ownTransaction = false,
       bool bypassTransaction = false,
       bool keepClientOpen = false}) async {
@@ -604,6 +595,41 @@ class Loose {
       print(res.body);
     }
     return json.decode(res.body) as List;
+  }
+
+  Future<int> readCounter(Counter counter, {bool ownTransaction = true}) async {
+    final paths = counter.shards.map((e) => '$documentRoot${e}').toList();
+
+    // TODO: Should use list instead to handle shard count resizing
+    throw Exception('Implement list in readCounter');
+    final shards = await _batchGetFromPaths(paths,
+        ownTransaction: ownTransaction,
+        keepClientOpen: hasOpenClient,
+        bypassTransaction: false);
+
+    var result = 0;
+
+    shards.forEach((e) {
+      if ((e as Map<String, Object>).containsKey('found')) {
+        final doc = (e as Map<String, Object>)['found'];
+        final fields = (doc as Map<String, Object>)['fields'];
+        final field = (fields as Map<String, Object>)[counter.fieldPath];
+        final value = int.tryParse(
+            (field as Map<String, Object>)['integerValue'] as String);
+        if (value == null) {
+          return null;
+        } else {
+          result = result + value;
+        }
+      }
+    });
+    return result;
+  }
+
+  Future writeCounter(Shard shard) async {
+    final write = Write.count(shard);
+
+    await batchWrite([write], keepClientOpen: hasOpenClient);
   }
 }
 
