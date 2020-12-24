@@ -40,12 +40,12 @@ class Reference {
   }
 
   @override
-  bool operator ==(dynamic other) {
-    if (other is! Reference) {
-      return false;
-    }
-    return toString() == other.toString();
+  bool operator ==(covariant Reference other) {
+    return _location == other._location;
   }
+
+  @override
+  int get hashCode => _location.hashCode;
 
   Reference.fromFirestore(Map<String, Object> value) {
     _location = value['referenceValue'] as String;
