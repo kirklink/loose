@@ -1,4 +1,4 @@
-export 'src/loose.dart';
+export 'src/loose.dart' show Loose;
 export 'src/loose_credentials.dart';
 export 'src/case.dart';
 export 'src/query/query.dart';

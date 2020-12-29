@@ -4,13 +4,16 @@ import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:loose/src/loose_credentials.dart';
 import 'package:loose/src/documenter.dart';
 import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/document_info.dart';
 import 'package:loose/src/loose_response.dart';
 import 'package:loose/src/reference.dart';
 import 'package:loose/src/firestore_database.dart';
 import 'package:loose/src/constants.dart';
 import 'package:loose/src/write.dart';
-import 'package:loose/src/batch_write_results.dart';
+import 'package:loose/src/write_results.dart';
+import 'package:loose/src/commit_result.dart';
+import 'package:loose/src/batch_get_request.dart';
+import 'package:loose/src/batch_get_result.dart';
+import 'package:loose/src/list_result.dart';
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/query/query.dart';
 import 'package:loose/src/query/query_field.dart';
@@ -26,13 +29,90 @@ abstract class LooseErrors {
       LooseError(500, 'Call to Firestore failed.', serverMessage);
 }
 
+class Transaction {
+  final String id;
+  final Loose _loose;
+  bool complete = false;
+
+  Transaction._(this._loose, this.id);
+
+  static Future<Transaction> newTransaction(Loose loose) async {
+    final id = await loose._beginTransaction();
+    return Transaction._(loose, id);
+  }
+
+  void _checkComplete() {
+    if (complete) {
+      throw LooseException(
+          'The transaction with id "$id" is already complete.');
+    }
+  }
+
+  Future<LooseResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+    Documenter<T, S, R> document, {
+    List<String> idPath = const [],
+  }) async {
+    _checkComplete();
+    return _loose._readImpl(document,
+        idPath: idPath, keepClientOpen: true, transactionId: id);
+  }
+
+  Future<bool> exists(Documenter document,
+      {List<String> idPath = const []}) async {
+    _checkComplete();
+    final res = await _loose._readImpl(document,
+        idPath: idPath,
+        ignoreContent: true,
+        keepClientOpen: true,
+        transactionId: id);
+    if (!res.ok || res.errorCode == 404) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  Future<ListResults<T, S>>
+      list<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {int pageSize = 20,
+          String nextPageToken = ''}) async {
+    return _loose._listImpl(document,
+        keepClientOpen: true, pageSize: pageSize, nextPageToken: nextPageToken);
+  }
+
+  Future<LooseResponse<T, S>>
+      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Query<T, S, R> query) async {
+    _checkComplete();
+    return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
+  }
+
+  Future<CommitResult> commit(
+      {List<Writable> writes = const [], bool keepClientOpen = false}) async {
+    _checkComplete();
+    return _loose._commitTransaction(
+        writes: writes, transactionId: id, keepClientOpen: keepClientOpen);
+  }
+
+  Future<bool> rollback() async {
+    return _loose._rollbackTransaction(id);
+  }
+
+  Future<int> readCounter(Counter counter) async {
+    _checkComplete();
+    return _loose._readCounterImpl(counter, transactionId: id);
+  }
+}
+
 class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
   LooseCredentials _creds;
   auth.AutoRefreshingAuthClient _client;
   FirestoreDatabase _database;
-  var _transactionId = '';
+  // var _transactionId = '';
 
   String get documentRoot => _database.documentRoot;
   String get databaseRoot => _database.rootPath;
@@ -83,6 +163,10 @@ class Loose {
       _client.close();
       _client = null;
     }
+  }
+
+  Future<Transaction> transaction() async {
+    return Transaction.newTransaction(this);
   }
 
   // CREATE
@@ -158,13 +242,12 @@ class Loose {
 
   // READ
   Future<LooseResponse<T, S>>
-      read<T extends DocumentShell<S>, S, R extends QueryFields>(
-    Documenter<T, S, R> document, {
-    List<String> idPath = const [],
-    bool keepClientOpen = false,
-    bool bypassTransaction = false,
-    bool ignoreContent = false,
-  }) async {
+      _readImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const [],
+          bool keepClientOpen = false,
+          bool ignoreContent = false,
+          String transactionId = ''}) async {
     var workingPath = '${document.location.path}/${document.location.name}';
 
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
@@ -179,8 +262,8 @@ class Loose {
     _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty && !bypassTransaction) {
-      queryParameters.addAll({'transaction': _transactionId});
+    if (transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': transactionId});
     }
 
     final uri = Uri.https(
@@ -210,15 +293,21 @@ class Loose {
     }
   }
 
+  Future<LooseResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {List<String> idPath = const [],
+          bool keepClientOpen = false}) async {
+    return _readImpl(document,
+        idPath: idPath, keepClientOpen: keepClientOpen, ignoreContent: false);
+  }
+
   Future<bool> exists(Documenter document,
       {List<String> idPath = const [],
       bool keepClientOpen = false,
       bool bypassTransaction = false}) async {
-    final res = await read(document,
-        idPath: idPath,
-        ignoreContent: true,
-        keepClientOpen: keepClientOpen,
-        bypassTransaction: bypassTransaction);
+    final res = await _readImpl(document,
+        idPath: idPath, ignoreContent: true, keepClientOpen: keepClientOpen);
     if (!res.ok || res.errorCode == 404) {
       return false;
     } else {
@@ -313,18 +402,18 @@ class Loose {
 
   // QUERY
   Future<LooseResponse<T, S>>
-      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+      _queryImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
           Query<T, S, R> query,
           {bool keepClientOpen = false,
-          bool bypassTransaction = false}) async {
+          String transactionId = ''}) async {
     final rawBody = query.encode();
     final reqBody = json.encode(rawBody);
 
     _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    if (_transactionId.isNotEmpty && !bypassTransaction) {
-      queryParameters.addAll({'transaction': _transactionId});
+    if (transactionId.isNotEmpty) {
+      queryParameters.addAll({'transaction': transactionId});
     }
 
     final uri = Uri.https(
@@ -396,6 +485,13 @@ class Loose {
     }).toList());
   }
 
+  Future<LooseResponse<T, S>>
+      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Query<T, S, R> query,
+          {bool keepClientOpen = false}) async {
+    return _queryImpl(query, keepClientOpen: keepClientOpen);
+  }
+
   LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(
       int statusCode, String serverResponse) {
     switch (statusCode) {
@@ -410,10 +506,8 @@ class Loose {
     }
   }
 
-  Future<String> beginTransaction({bool detached = false}) async {
-    if (_transactionId.isNotEmpty && !detached) {
-      throw LooseException('A transaction has already been started.');
-    }
+  // TRANSACTIONS
+  Future<String> _beginTransaction() async {
     _client ??= await _createClient();
     final uri = Uri.https(authority, '${_database.rootPath}:beginTransaction');
     final res = await _client.post(uri);
@@ -424,23 +518,16 @@ class Loose {
     }
     final id =
         (json.decode(res.body) as Map<String, Object>)['transaction'] as String;
-    if (!detached) {
-      _transactionId = id;
-    }
     return id;
   }
 
-  Future<bool> commitTransaction(
+  Future<CommitResult> _commitTransaction(
       {List<Writable> writes = const [],
       String transactionId = '',
       bool keepClientOpen = false}) async {
-    if (_transactionId.isEmpty && transactionId.isEmpty) {
-      throw LooseException(
-          'A transaction must be started or a transaction id must be provided.');
-    }
     _client ??= await _createClient();
     final body = {
-      'transaction': transactionId.isNotEmpty ? transactionId : _transactionId,
+      'transaction': transactionId,
       'writes': await Future.wait(writes
           .map((e) async => (await e.encode(_database.documentRoot)))
           .toList())
@@ -455,23 +542,16 @@ class Loose {
       // TODO: Handle failed transaction
       print(res.statusCode);
       print(res.body);
-      return false;
+      return CommitResult(WriteResults.empty, '');
     }
-    if (transactionId.isEmpty) {
-      _transactionId = '';
-    }
-    return true;
+    final resBody = json.decode(res.body) as Map<String, Object>;
+    return CommitResult(
+        WriteResults(writes, resBody), resBody['commitTime'] as String);
   }
 
-  Future<bool> rollbackTransaction([String transactionId = '']) async {
-    if (_transactionId.isEmpty && transactionId.isEmpty) {
-      throw LooseException(
-          'There is no current transaction in progress to rollback.');
-    }
+  Future<bool> _rollbackTransaction(String transactionId) async {
     _client ??= await _createClient();
-    final body = json.encode({
-      'transaction': transactionId.isEmpty ? _transactionId : transactionId
-    });
+    final body = json.encode({'transaction': transactionId});
     final uri = Uri.https(authority, '${_database.rootPath}:rollback');
     final res = await _client.post(uri, body: body);
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -480,11 +560,11 @@ class Loose {
       print(res.body);
       return false;
     }
-    _transactionId = '';
     return true;
   }
 
-  Future<BatchWriteResults> batchWrite(List<Writable> writes,
+  // BATCH WRITE
+  Future<WriteResults> batchWrite(List<Writable> writes,
       {bool keepClientOpen = false}) async {
     _client ??= await _createClient();
     final body = {
@@ -500,21 +580,18 @@ class Loose {
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
-      return BatchWriteResults.empty;
+      return WriteResults.empty;
     }
     final resBody = json.decode(res.body) as Map<String, Object>;
-    return BatchWriteResults(writes, resBody);
+    return WriteResults(writes, resBody);
   }
 
-/////////////////
-// batchGet
-/////////////////
+  // BATCH GET
   Future<BatchGetResults<T, S>>
-      batchGet<T extends DocumentShell<S>, S, R extends QueryFields>(
-          BatchGetDocuments<T, S, R> documents,
+      _batchGetImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+          BatchGetRequest<T, S, R> documents,
           {bool keepClientOpen = false,
-          bool bypassTransaction = false,
-          bool ownTransaction = false}) async {
+          String transactionId = ''}) async {
     final documentPaths = <String>[];
     for (final idPath in documents.idPaths) {
       var workingPath =
@@ -532,9 +609,7 @@ class Loose {
     }
 
     final decoded = await _batchGetFromPaths(documentPaths,
-        ownTransaction: ownTransaction,
-        bypassTransaction: bypassTransaction,
-        keepClientOpen: keepClientOpen);
+        transactionId: transactionId, keepClientOpen: keepClientOpen);
 
     var found = <T>[];
     var missing = <String>[];
@@ -552,28 +627,22 @@ class Loose {
       }
     });
 
-    return BatchGetResults(LooseResponse<T, S>.list(found), missing,
-        transactionId: _transactionId);
+    return BatchGetResults(LooseResponse<T, S>.list(found), missing);
   }
 
-/////////////////////////
-// batchGetFromPaths
-/////////////////////////
-
+  // BATCH GET FROM PATHS
   Future<List> _batchGetFromPaths(List<String> documentPaths,
-      {bool ownTransaction = false,
-      bool bypassTransaction = false,
-      bool keepClientOpen = false}) async {
+      {String transactionId = '',
+      bool keepClientOpen = false,
+      bool ownTransaction = false}) async {
     final body = <String, Object>{'documents': documentPaths};
 
-    var thisTransactionId = '';
-
-    if (!ownTransaction && !bypassTransaction) {
-      body['transaction'] = _transactionId;
-      thisTransactionId = _transactionId;
+    var ownTransactionId = '';
+    if (transactionId.isNotEmpty) {
+      body['transaction'] = transactionId;
     } else if (ownTransaction) {
-      thisTransactionId = await beginTransaction(detached: true);
-      body['transaction'] = thisTransactionId;
+      ownTransactionId = await _beginTransaction();
+      body['transaction'] = ownTransactionId;
     }
 
     _client ??= await _createClient();
@@ -582,10 +651,12 @@ class Loose {
 
     final res = await _client.post(uri, body: json.encode(body));
 
-    final commit = await commitTransaction(
-        transactionId: thisTransactionId, keepClientOpen: keepClientOpen);
-    if (!commit) {
-      // TODO: Handle batchGet own transaction commit failure
+    if (ownTransactionId.isNotEmpty) {
+      final commit = await _commitTransaction(
+          transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
+      if (!commit.ok) {
+        // TODO: Handle batchGet own transaction commit failure
+      }
     }
 
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -597,82 +668,132 @@ class Loose {
     return json.decode(res.body) as List;
   }
 
-  Future<int> readCounter(Counter counter, {bool ownTransaction = true}) async {
-    final paths = counter.shards.map((e) => '$documentRoot${e}').toList();
-
-    // TODO: Should use list instead to handle shard count resizing
-    throw Exception('Implement list in readCounter');
-    final shards = await _batchGetFromPaths(paths,
-        ownTransaction: ownTransaction,
+  // READ COUNTER
+  Future<int> _readCounterImpl(Counter counter,
+      {String transactionId = ''}) async {
+    final shards = await _listFromPath(counter.location,
+        pageSize: 1000,
         keepClientOpen: hasOpenClient,
-        bypassTransaction: false);
+        transactionId: transactionId,
+        ownTransaction: transactionId.isEmpty);
 
     var result = 0;
 
-    shards.forEach((e) {
-      if ((e as Map<String, Object>).containsKey('found')) {
-        final doc = (e as Map<String, Object>)['found'];
-        final fields = (doc as Map<String, Object>)['fields'];
-        final field = (fields as Map<String, Object>)[counter.fieldPath];
-        final value = int.tryParse(
-            (field as Map<String, Object>)['integerValue'] as String);
-        if (value == null) {
-          return null;
-        } else {
-          result = result + value;
-        }
+    ((shards as Map<String, Object>)['documents'] as List).forEach((e) {
+      final fields = (e as Map<String, Object>)['fields'];
+      final field = (fields as Map<String, Object>)[counter.fieldPath];
+      final value = int.tryParse(
+          (field as Map<String, Object>)['integerValue'] as String);
+      if (value == null) {
+        return null;
+      } else {
+        result = result + value;
       }
     });
     return result;
   }
 
+  Future<int> readCounter(Counter counter) async {
+    return _readCounterImpl(counter);
+  }
+
+  // WRITE COUNTER
   Future writeCounter(Shard shard) async {
     final write = Write.count(shard);
 
     await batchWrite([write], keepClientOpen: hasOpenClient);
   }
-}
 
-/*
-projects/dagobah/databases/(default)/documents/tests/0MN=f9AP0yPfsnQqAQn9
-projects/dagobah/databases/(default)/documents/tests/0_keySkO_F_KUYhBwHhy
-projects/dagobah/databases/(default)/documents/tests/1Kr1A7rA7A76SffDQvPX
-projects/dagobah/databases/(default)/documents/tests/2405P+Y7NFeY=K+007Be
-projects/dagobah/databases/(default)/documents/tests/2=dz3xo96g2an69Hn6xX
-*/
+  // LIST GET
+  Future<ListResults<T, S>>
+      _listImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {int pageSize = 0,
+          String nextPageToken = '',
+          bool keepClientOpen = false,
+          String transactionId = ''}) async {
+    var workingPath =
+        '${document.location.pathToCollection}${document.location.collection}';
 
-class BatchGetDocuments<T extends DocumentShell<S>, S, R extends QueryFields> {
-  final Documenter<T, S, R> document;
-  final List<List<String>> idPaths = [];
-  DocumentInfo get location => document.location;
-  BatchGetDocuments(this.document);
+    final decoded = await _listFromPath(workingPath,
+        pageSize: pageSize,
+        nextPageToken: nextPageToken,
+        transactionId: transactionId,
+        keepClientOpen: keepClientOpen);
 
-  void addIdPath(List<String> idPath) {
-    idPaths.add(idPath);
+    var docs = <T>[];
+    var resultNextPageToken = '';
+
+    ((decoded as Map<String, Object>)['documents'] as List).forEach((e) {
+      final doc = e as Map<String, Object>;
+      docs.add(document.fromFirestore(
+          doc['fields'] as Map<String, Object>,
+          doc['name'] as String,
+          doc['createTime'] as String,
+          doc['updateTime'] as String));
+    });
+    resultNextPageToken =
+        ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
+
+    return ListResults(LooseResponse<T, S>.list(docs), resultNextPageToken);
+  }
+
+  // LIST FROM PATH
+  Future<Map> _listFromPath(String collectionPath,
+      {String transactionId = '',
+      bool keepClientOpen = false,
+      int pageSize = 20,
+      String nextPageToken = '',
+      bool ownTransaction = false}) async {
+    final params = <String, String>{};
+
+    params['pageSize'] = pageSize.toString();
+
+    if (nextPageToken.isNotEmpty) {
+      params['nextPageToken'] = nextPageToken;
+    }
+
+    var ownTransactionId = '';
+    if (transactionId.isNotEmpty) {
+      params['transaction'] = transactionId;
+    } else if (ownTransaction) {
+      ownTransactionId = await _beginTransaction();
+      params['transaction'] = ownTransactionId;
+    }
+
+    _client ??= await _createClient();
+
+    final uri =
+        Uri.https(authority, '${_database.rootPath}$collectionPath', params);
+
+    final res = await _client.get(uri);
+
+    if (ownTransactionId.isNotEmpty) {
+      final commit = await _commitTransaction(
+          transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
+      if (!commit.ok) {
+        // TODO: Handle batchGet own transaction commit failure
+      }
+    }
+
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      print('batchGet fail');
+      print(res.statusCode);
+      print(res.body);
+    }
+    return json.decode(res.body) as Map;
+  }
+
+  Future<ListResults<T, S>>
+      list<T extends DocumentShell<S>, S, R extends QueryFields>(
+          Documenter<T, S, R> document,
+          {int pageSize = 20,
+          String nextPageToken = '',
+          bool keepClientOpen = false}) async {
+    return _listImpl(document,
+        pageSize: pageSize,
+        nextPageToken: nextPageToken,
+        keepClientOpen: keepClientOpen);
   }
 }
-
-class BatchGetResults<T extends DocumentShell<S>, S> {
-  final LooseResponse<T, S> found;
-  final List<String> missing;
-  final String transactionId;
-
-  BatchGetResults(this.found, this.missing, {this.transactionId = ''});
-}
-
-//   final decoded = json.decode(res.body);
-
-//   // If no object contains 'document', no documents were returned
-//   if (!((decoded as List)[0] as Map).containsKey('document')) {
-//     return LooseResponse.list(const []);
-//   }
-//   return LooseResponse.list((decoded as List).map((e) {
-//     final doc = (e as Map)['document'] as Map;
-
-//     return query.document.fromFirestore(
-//         doc['fields'] as Map<String, Object>,
-//         doc['name'] as String,
-//         doc['createTime'] as String,
-//         doc['updateTime'] as String);
-//   }).toList());
-// }

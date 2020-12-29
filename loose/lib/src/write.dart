@@ -411,9 +411,14 @@ class Counter {
     return paths;
   }
 
+  String get location => '${_document.path}/shards';
+
   Counter._(this._document, this._numShards);
 
   factory Counter(Document document, [int numShards = 1]) {
+    if (numShards > 999) {
+      throw LooseException('Maximum number of shards is 999.');
+    }
     return _counters.putIfAbsent(
         document.path, () => Counter._(document, numShards));
   }
