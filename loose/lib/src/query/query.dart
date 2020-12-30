@@ -4,7 +4,7 @@ import 'package:loose/src/document_shell.dart';
 import 'package:loose/src/query/filter.dart';
 import 'package:loose/src/query/order.dart';
 
-class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
+class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
   Filter _filter;
   final _orders = <Order>[];
   int _limit;
@@ -14,7 +14,7 @@ class Query<T extends DocumentShell<S>, S, R extends QueryFields> {
 
   Query(this.document);
 
-  R get fields => document.queryFields;
+  R get fields => document.docFields;
 
   void filter(Filter filter) {
     if (_filter != null) {

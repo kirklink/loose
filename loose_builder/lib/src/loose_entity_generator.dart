@@ -98,7 +98,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     final className = '${element.name}';
     final documentName = '_\$${className}Document';
 
-    final qFields = createQueryFields(element, recase);
+    final qFields = createDocumentFields(element, recase);
 
     if (qFields.isNotEmpty) {
       classBuf.writeln(qFields);
@@ -118,7 +118,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln(
-        'final _\$${className}Fields queryFields = _\$${className}Fields();');
+        'final _\$${className}Fields docFields = _\$${className}Fields();');
     classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln(

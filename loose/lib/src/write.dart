@@ -1,12 +1,12 @@
 import 'dart:math' show Random;
 import 'dart:convert' show base64;
-import 'package:loose/src/document.dart';
 import 'package:loose/src/document_shell.dart';
 import 'package:loose/src/documenter.dart';
 import 'package:loose/src/constants.dart' show dynamicNameToken;
 import 'package:loose/src/loose_exception.dart';
 import 'package:loose/src/loose.dart';
 import 'package:loose/src/query/query_field.dart';
+import 'package:loose/src/counter.dart';
 
 Future<String> _generateId() async {
   final random = Random.secure();
@@ -25,7 +25,7 @@ abstract class Writable {
   String get label;
 }
 
-class WriteCreate<T extends DocumentShell<S>, S, R extends QueryFields,
+class WriteCreate<T extends DocumentShell<S>, S, R extends DocumentFields,
     Q extends QueryField> implements Writable {
   bool _autoAssignId = false;
   List<String> _idPath;
@@ -119,7 +119,7 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends QueryFields,
   }
 }
 
-class WriteUpdate<T extends DocumentShell<S>, S, R extends QueryFields,
+class WriteUpdate<T extends DocumentShell<S>, S, R extends DocumentFields,
     Q extends QueryField> implements Writable {
   final List<String> _idPath;
   final Documenter<T, S, R> _document;
@@ -168,7 +168,7 @@ class WriteUpdate<T extends DocumentShell<S>, S, R extends QueryFields,
   }
 }
 
-class WriteDelete<T extends DocumentShell<S>, S, R extends QueryFields>
+class WriteDelete<T extends DocumentShell<S>, S, R extends DocumentFields>
     implements Writable {
   List<String> _idPath;
   final Documenter<T, S, R> _document;
@@ -202,7 +202,7 @@ class WriteDelete<T extends DocumentShell<S>, S, R extends QueryFields>
   }
 }
 
-class WriteTransform<T extends DocumentShell<S>, S, R extends QueryFields>
+class WriteTransform<T extends DocumentShell<S>, S, R extends DocumentFields>
     implements Writable {
   List<String> _idPath;
   final Documenter<T, S, R> _document;
@@ -269,7 +269,7 @@ class WriteCounter implements Writable {
 abstract class Write {
   // Write._();
   static WriteCreate<T, S, R, Q> create<T extends DocumentShell<S>, S,
-      R extends QueryFields, Q extends QueryField>(
+      R extends DocumentFields, Q extends QueryField>(
     Documenter<T, S, R> document, {
     List<String> idPath = const [],
     bool autoAssignId = false,
@@ -286,7 +286,7 @@ abstract class Write {
   }
 
   static WriteUpdate<T, S, R, Q> update<T extends DocumentShell<S>, S,
-      R extends QueryFields, Q extends QueryField>(
+      R extends DocumentFields, Q extends QueryField>(
     Documenter<T, S, R> document,
     List<String> idPath,
     List<Q> updateFields, {
@@ -298,7 +298,7 @@ abstract class Write {
   }
 
   static WriteDelete<T, S, R>
-      delete<T extends DocumentShell<S>, S, R extends QueryFields>(
+      delete<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           String label = ''}) {
@@ -306,7 +306,7 @@ abstract class Write {
   }
 
   static WriteTransform<T, S, R>
-      transform<T extends DocumentShell<S>, S, R extends QueryFields>(
+      transform<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document, List<FieldTransform> transforms,
           {List<String> idPath = const [], String label = ''}) {
     return WriteTransform(document, transforms, idPath: idPath, label: label);
@@ -396,54 +396,4 @@ class FieldTransform {
     _transform['setToServerValue'] = 'REQUEST_TIME';
     return this;
   }
-}
-
-class Counter {
-  final Document _document;
-  final int _numShards;
-  final String fieldPath = 'c';
-
-  List<String> get shards {
-    final paths = <String>[];
-    for (var i = 0; i < _numShards; i++) {
-      paths.add('${_document.path}/shards/$i');
-    }
-    return paths;
-  }
-
-  String get location => '${_document.path}/shards';
-
-  Counter._(this._document, this._numShards);
-
-  factory Counter(Document document, [int numShards = 1]) {
-    if (numShards > 999) {
-      throw LooseException('Maximum number of shards is 999.');
-    }
-    return _counters.putIfAbsent(
-        document.path, () => Counter._(document, numShards));
-  }
-
-  int _getId() {
-    final random = Random();
-    return random.nextInt(_numShards);
-  }
-
-  Shard increase([int by = 1]) {
-    final id = _getId();
-    return Shard('${_document.path}/shards/$id', fieldPath, by);
-  }
-
-  Shard decrease([int by = 1]) {
-    final id = _getId();
-    return Shard('${_document.path}/shards/$id', fieldPath, (by * -1));
-  }
-
-  static final _counters = <String, Counter>{};
-}
-
-class Shard {
-  final String documentPath;
-  final String fieldPath;
-  final int increment;
-  Shard(this.documentPath, this.fieldPath, this.increment);
 }

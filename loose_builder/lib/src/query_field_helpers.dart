@@ -18,7 +18,7 @@ final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
-String createQueryFields(ClassElement element, int recase,
+String createDocumentFields(ClassElement element, int recase,
     {List<String> classParents = const <String>[],
     List<String> fieldParents = const <String>[],
     int nestLevel = 0}) {
@@ -40,7 +40,7 @@ String createQueryFields(ClassElement element, int recase,
   final qClassBuf = StringBuffer();
   final qFieldsBuf = StringBuffer();
   qClassBuf.writeln(
-      'class ${privatePrefix}\$${className}Fields extends QueryFields {');
+      'class ${privatePrefix}\$${className}Fields extends DocumentFields {');
 
   for (final klass in classElements) {
     for (final field in klass.fields) {
@@ -62,7 +62,7 @@ String createQueryFields(ClassElement element, int recase,
         final nextFieldParents = <String>[];
         nextFieldParents.addAll(fieldParents);
         nextFieldParents.add(field.name);
-        final nextPage = createQueryFields(field.type.element, recase,
+        final nextPage = createDocumentFields(field.type.element, recase,
             classParents: nextClassParents,
             fieldParents: nextFieldParents,
             nestLevel: nestLevel + 1);

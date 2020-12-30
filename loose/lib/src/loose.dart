@@ -15,6 +15,7 @@ import 'package:loose/src/batch_get_request.dart';
 import 'package:loose/src/batch_get_result.dart';
 import 'package:loose/src/list_result.dart';
 import 'package:loose/src/loose_exception.dart';
+import 'package:loose/src/counter.dart';
 import 'package:loose/src/query/query.dart';
 import 'package:loose/src/query/query_field.dart';
 
@@ -48,8 +49,8 @@ class Transaction {
     }
   }
 
-  Future<LooseResponse<T, S>>
-      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseEntityResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends DocumentFields>(
     Documenter<T, S, R> document, {
     List<String> idPath = const [],
   }) async {
@@ -66,7 +67,7 @@ class Transaction {
         ignoreContent: true,
         keepClientOpen: true,
         transactionId: id);
-    if (!res.ok || res.errorCode == 404) {
+    if (!res.ok || res.error.isNotFound) {
       return false;
     } else {
       return true;
@@ -74,7 +75,7 @@ class Transaction {
   }
 
   Future<ListResults<T, S>>
-      list<T extends DocumentShell<S>, S, R extends QueryFields>(
+      list<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {int pageSize = 20,
           String nextPageToken = ''}) async {
@@ -82,8 +83,8 @@ class Transaction {
         keepClientOpen: true, pageSize: pageSize, nextPageToken: nextPageToken);
   }
 
-  Future<LooseResponse<T, S>>
-      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseListResponse<T, S>>
+      query<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Query<T, S, R> query) async {
     _checkComplete();
     return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
@@ -170,8 +171,8 @@ class Loose {
   }
 
   // CREATE
-  Future<LooseResponse<T, S>>
-      create<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseEntityResponse<T, S>>
+      create<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool autoAssignId = false,
@@ -237,12 +238,12 @@ class Loose {
         resBody['name'] as String,
         resBody['createTime'] as String,
         resBody['updateTime'] as String);
-    return LooseResponse.single(shell);
+    return LooseEntityResponse(shell);
   }
 
   // READ
-  Future<LooseResponse<T, S>>
-      _readImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseEntityResponse<T, S>>
+      _readImpl<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool keepClientOpen = false,
@@ -282,19 +283,19 @@ class Loose {
     final resBody = json.decode(res.body);
     if (ignoreContent) {
       final shell = document.fromFirestore(const {}, '', '', '');
-      return LooseResponse.single(shell);
+      return LooseEntityResponse(shell);
     } else {
       final shell = document.fromFirestore(
           resBody['fields'] as Map<String, Object>,
           resBody['name'] as String,
           resBody['createTime'] as String,
           resBody['updateTime'] as String);
-      return LooseResponse.single(shell);
+      return LooseEntityResponse(shell);
     }
   }
 
-  Future<LooseResponse<T, S>>
-      read<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseEntityResponse<T, S>>
+      read<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool keepClientOpen = false}) async {
@@ -308,7 +309,7 @@ class Loose {
       bool bypassTransaction = false}) async {
     final res = await _readImpl(document,
         idPath: idPath, ignoreContent: true, keepClientOpen: keepClientOpen);
-    if (!res.ok || res.errorCode == 404) {
+    if (!res.ok || res.error.isNotFound) {
       return false;
     } else {
       return true;
@@ -316,8 +317,8 @@ class Loose {
   }
 
   // UPDATE
-  Future<LooseResponse<T, S>> update<T extends DocumentShell<S>, S,
-          R extends QueryFields, Q extends QueryField>(
+  Future<LooseEntityResponse<T, S>> update<T extends DocumentShell<S>, S,
+          R extends DocumentFields, Q extends QueryField>(
       Documenter<T, S, R> document, List<Q> updateFields,
       {List<String> idPath = const [],
       bool printFields = false,
@@ -362,12 +363,12 @@ class Loose {
         resBody['name'] as String,
         resBody['createTime'] as String,
         resBody['updateTime'] as String);
-    return LooseResponse.single(shell);
+    return LooseEntityResponse(shell);
   }
 
   // DELETE
-  Future<LooseResponse<T, S>>
-      delete<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseEntityResponse<T, S>>
+      delete<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           bool keepClientOpen = false}) async {
@@ -397,12 +398,12 @@ class Loose {
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
     }
-    return LooseResponse.single(DocumentShell.empty as T);
+    return LooseEntityResponse(DocumentShell.empty as T);
   }
 
   // QUERY
-  Future<LooseResponse<T, S>>
-      _queryImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseListResponse<T, S>>
+      _queryImpl<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Query<T, S, R> query,
           {bool keepClientOpen = false,
           String transactionId = ''}) async {
@@ -439,7 +440,7 @@ class Loose {
           }
         }
       }
-      return LooseResponse.fail(LooseErrors.apiCallFailed(res.body));
+      return LooseListResponse.fail(LooseErrors.apiCallFailed(res.body));
     }
 
 //     [{
@@ -472,9 +473,9 @@ class Loose {
 
     // If no object contains 'document', no documents were returned
     if (!((decoded as List)[0] as Map).containsKey('document')) {
-      return LooseResponse.list(const []);
+      return LooseListResponse(const []);
     }
-    return LooseResponse.list((decoded as List).map((e) {
+    return LooseListResponse((decoded as List).map((e) {
       final doc = (e as Map)['document'] as Map;
 
       return query.document.fromFirestore(
@@ -485,24 +486,27 @@ class Loose {
     }).toList());
   }
 
-  Future<LooseResponse<T, S>>
-      query<T extends DocumentShell<S>, S, R extends QueryFields>(
+  Future<LooseListResponse<T, S>>
+      query<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Query<T, S, R> query,
           {bool keepClientOpen = false}) async {
     return _queryImpl(query, keepClientOpen: keepClientOpen);
   }
 
-  LooseResponse<T, S> _singleEntityResponseFails<T extends DocumentShell<S>, S>(
-      int statusCode, String serverResponse) {
+  LooseEntityResponse<T, S>
+      _singleEntityResponseFails<T extends DocumentShell<S>, S>(
+          int statusCode, String serverResponse) {
     switch (statusCode) {
       case 409:
-        return LooseResponse.fail(LooseErrors.documentExists(serverResponse));
+        return LooseEntityResponse.fail(
+            LooseErrors.documentExists(serverResponse));
         break;
       case 404:
-        return LooseResponse.fail(LooseErrors.notFound(serverResponse));
+        return LooseEntityResponse.fail(LooseErrors.notFound(serverResponse));
         break;
       default:
-        return LooseResponse.fail(LooseErrors.apiCallFailed(serverResponse));
+        return LooseEntityResponse.fail(
+            LooseErrors.apiCallFailed(serverResponse));
     }
   }
 
@@ -588,7 +592,7 @@ class Loose {
 
   // BATCH GET
   Future<BatchGetResults<T, S>>
-      _batchGetImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+      _batchGetImpl<T extends DocumentShell<S>, S, R extends DocumentFields>(
           BatchGetRequest<T, S, R> documents,
           {bool keepClientOpen = false,
           String transactionId = ''}) async {
@@ -627,7 +631,7 @@ class Loose {
       }
     });
 
-    return BatchGetResults(LooseResponse<T, S>.list(found), missing);
+    return BatchGetResults(LooseListResponse(found), missing);
   }
 
   // BATCH GET FROM PATHS
@@ -706,7 +710,7 @@ class Loose {
 
   // LIST GET
   Future<ListResults<T, S>>
-      _listImpl<T extends DocumentShell<S>, S, R extends QueryFields>(
+      _listImpl<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {int pageSize = 0,
           String nextPageToken = '',
@@ -735,7 +739,7 @@ class Loose {
     resultNextPageToken =
         ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
 
-    return ListResults(LooseResponse<T, S>.list(docs), resultNextPageToken);
+    return ListResults(LooseListResponse(docs), resultNextPageToken);
   }
 
   // LIST FROM PATH
@@ -786,7 +790,7 @@ class Loose {
   }
 
   Future<ListResults<T, S>>
-      list<T extends DocumentShell<S>, S, R extends QueryFields>(
+      list<T extends DocumentShell<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {int pageSize = 20,
           String nextPageToken = '',
