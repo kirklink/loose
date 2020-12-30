@@ -1,6 +1,17 @@
 # Loose Changelog
 
 
+## 0.0.66
+- Add sharded counters
+- Standardize LooseResponse API
+- Separate LooseResponse classes
+- New transaction API
+- Rename Documenter fields
+- Add batch operations
+- Add writes to transaction commits
+- Allow build warning supression
+- Disallow query parameters being set multiple times
+
 ## 0.0.65
 - Allow build warning suppression
 

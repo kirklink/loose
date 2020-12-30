@@ -674,10 +674,10 @@ class Loose {
 
   // READ COUNTER
   Future<int> _readCounterImpl(Counter counter,
-      {String transactionId = ''}) async {
+      {String transactionId = '', bool keepClientOpen = false}) async {
     final shards = await _listFromPath(counter.location,
         pageSize: 1000,
-        keepClientOpen: hasOpenClient,
+        keepClientOpen: keepClientOpen,
         transactionId: transactionId,
         ownTransaction: transactionId.isEmpty);
 
@@ -697,15 +697,16 @@ class Loose {
     return result;
   }
 
-  Future<int> readCounter(Counter counter) async {
-    return _readCounterImpl(counter);
+  Future<int> readCounter(Counter counter,
+      {bool keepClientOpen = false}) async {
+    return _readCounterImpl(counter, keepClientOpen: keepClientOpen);
   }
 
   // WRITE COUNTER
-  Future writeCounter(Shard shard) async {
+  Future writeCounter(Shard shard, {bool keepClientOpen = false}) async {
     final write = Write.count(shard);
 
-    await batchWrite([write], keepClientOpen: hasOpenClient);
+    await batchWrite([write], keepClientOpen: keepClientOpen);
   }
 
   // LIST GET
