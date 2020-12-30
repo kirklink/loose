@@ -10,5 +10,5 @@ abstract class Documenter<T extends DocumentShell, S,
       String updateTime);
   T from(S entity);
   DocumentInfo get location;
-  R get docFields;
+  R get fields;
 }

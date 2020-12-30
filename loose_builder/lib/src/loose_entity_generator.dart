@@ -118,7 +118,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln(
-        'final _\$${className}Fields docFields = _\$${className}Fields();');
+        'final _\$${className}Fields fields = _\$${className}Fields();');
     classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln(

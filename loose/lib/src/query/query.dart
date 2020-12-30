@@ -14,7 +14,7 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
 
   Query(this.document);
 
-  R get fields => document.docFields;
+  R get fields => document.fields;
 
   void filter(Filter filter) {
     if (_filter != null) {

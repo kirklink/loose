@@ -3,14 +3,14 @@ import 'package:loose/src/loose_exception.dart';
 
 class LooseError {
   final int code;
-  final String message;
+  final String internalMessage;
   final String serverMessage;
 
   bool get isNotFound => 404 == code;
 
   const LooseError._(
-      [this.code = 0, this.message = '', this.serverMessage = '']);
-  const LooseError(this.code, this.message, this.serverMessage);
+      [this.code = 0, this.internalMessage = '', this.serverMessage = '']);
+  const LooseError(this.code, this.internalMessage, this.serverMessage);
 
   static const LooseError empty = LooseError._();
 }

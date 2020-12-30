@@ -6,5 +6,5 @@ class UpdateMask<T extends DocumentShell<S>, S, R extends DocumentFields> {
 
   UpdateMask(this._document);
 
-  R get fields => _document.docFields;
+  R get fields => _document.fields;
 }
