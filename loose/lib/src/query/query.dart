@@ -26,11 +26,18 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
 
   // Filter filter = Filter();
 
-  void orderBy(Order order) {
-    _orders.add(order);
+  void order(List<Order> orders) {
+    if (_orders.isNotEmpty) {
+      throw LooseException('The order has already been set on this query.');
+    }
+    _orders.addAll(_orders);
   }
 
   void limit(int value) {
+    if (_limit != null) {
+      throw LooseException(
+          'Attempting to change a limit which has already been set.');
+    }
     if (value < 0) {
       throw LooseException(
           'The query limit must be >= 0. "$value" was provided.');
@@ -39,6 +46,10 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
   }
 
   void offset(int value) {
+    if (_offset != null) {
+      throw LooseException(
+          'Attempting to change an offset which has already been set.');
+    }
     if (value < 0) {
       throw LooseException(
           'The query offset must be >= 0. "$value" was provided.');
