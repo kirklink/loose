@@ -22,11 +22,11 @@ abstract class LooseResponse<T extends DocumentShell<S>, S> {
   LooseError get error => _error;
   int get count;
 
-  LooseResponse._() {
+  LooseResponse() {
     _error = LooseError.empty;
   }
 
-  LooseResponse._fail(this._error);
+  LooseResponse.fail(this._error);
 }
 
 class LooseEntityResponse<T extends DocumentShell<S>, S> extends LooseResponse {
@@ -35,9 +35,9 @@ class LooseEntityResponse<T extends DocumentShell<S>, S> extends LooseResponse {
   @override
   int get count => ok ? 1 : 0;
 
-  LooseEntityResponse(this._shell) : super._();
+  LooseEntityResponse(this._shell) : super();
 
-  LooseEntityResponse.fail(LooseError error) : super._fail(error);
+  LooseEntityResponse.fail(LooseError error) : super.fail(error);
 
   S get entity {
     if (!ok) {
@@ -62,9 +62,9 @@ class LooseListResponse<T extends DocumentShell<S>, S> extends LooseResponse {
   @override
   int get count => ok ? _shellList.length : 0;
 
-  LooseListResponse(this._shellList) : super._();
+  LooseListResponse(this._shellList) : super();
 
-  LooseListResponse.fail(LooseError error) : super._fail(error);
+  LooseListResponse.fail(LooseError error) : super.fail(error);
 
   List<S> get entities {
     if (!ok) {
