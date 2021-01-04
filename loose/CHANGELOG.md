@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.67
+- Fix bug when adding order in a loop
+
 ## 0.0.66
 - Add sharded counters
 - Standardize LooseResponse API

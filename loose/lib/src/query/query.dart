@@ -30,7 +30,7 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
     if (_orders.isNotEmpty) {
       throw LooseException('The order has already been set on this query.');
     }
-    _orders.addAll(_orders);
+    _orders.addAll(orders);
   }
 
   void limit(int value) {
