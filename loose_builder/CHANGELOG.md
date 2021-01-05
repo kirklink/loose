@@ -1,6 +1,10 @@
 # Loose Builder Changelog
 
 
+## 0.0.68
+- Fix closing client when already closed
+- Fix bug in singleton
+
 ## 0.0.67
 - Fix bug when adding order in a loop
 

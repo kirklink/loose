@@ -112,7 +112,7 @@ class Loose {
 
   LooseCredentials _creds;
   auth.AutoRefreshingAuthClient _client;
-  FirestoreDatabase _database;
+  // FirestoreDatabase _database;
   // var _transactionId = '';
 
   String get documentRoot => _database.documentRoot;
@@ -125,20 +125,23 @@ class Loose {
   }
 
   factory Loose() {
-    if (_cache == null) {
+    if (_credentials == null || _database == null) {
       throw LooseException('Loose has not been initialized with Loose.init()');
     }
-    return _cache;
+    return Loose._(_credentials, _database);
   }
 
   static void init(LooseCredentials credentials, FirestoreDatabase database) {
-    if (_cache != null) {
+    if (_credentials != null || _database != null) {
       throw LooseException('Loose has already been initialized.');
     }
-    _cache ??= Loose._(credentials, database);
+    _credentials ??= credentials;
+    _database ??= database;
   }
 
-  static Loose _cache;
+  // static Loose _cache;
+  static LooseCredentials _credentials;
+  static FirestoreDatabase _database;
 
   Future<auth.AutoRefreshingAuthClient> _createClient() async {
     if (_creds.fromApplicationDefault) {
@@ -223,8 +226,7 @@ class Loose {
     final res = await _client.post(uri, body: json.encode(reqBody));
 
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
 
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -272,8 +274,7 @@ class Loose {
     final res = await _client.get(uri);
 
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
 
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -349,8 +350,7 @@ class Loose {
     final res = await _client.patch(uri, body: json.encode(reqBody));
 
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
 
     if (res.statusCode < 200 || res.statusCode > 299) {
@@ -392,8 +392,7 @@ class Loose {
         authority, '${_database.rootPath}${workingPath}', queryParameters);
     final res = await _client.post(uri);
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
@@ -424,8 +423,7 @@ class Loose {
 
     final res = await _client.post(uri, body: reqBody);
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       if (res.statusCode == 400) {
@@ -539,8 +537,7 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}:commit');
     final res = await _client.post(uri, body: json.encode(body));
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
@@ -579,8 +576,7 @@ class Loose {
     final uri = Uri.https(authority, '${_database.rootPath}:batchWrite');
     final res = await _client.post(uri, body: json.encode(body));
     if (!keepClientOpen) {
-      _client.close();
-      _client = null;
+      done();
     }
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
