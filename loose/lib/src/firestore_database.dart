@@ -1,4 +1,4 @@
-import 'package:loose/src/constants.dart';
+import 'constants.dart';
 
 class FirestoreDatabase {
   final String project;

@@ -1,5 +1,5 @@
 import 'package:loose/annotations.dart';
-import 'package:loose/src/loose_exception.dart';
+import 'loose_exception.dart';
 
 class FromFs {
   FromFs._();

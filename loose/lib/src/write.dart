@@ -1,12 +1,12 @@
 import 'dart:math' show Random;
 import 'dart:convert' show base64;
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/documenter.dart';
-import 'package:loose/src/constants.dart' show dynamicNameToken;
-import 'package:loose/src/loose_exception.dart';
-import 'package:loose/src/loose.dart';
-import 'package:loose/src/query/query_field.dart';
-import 'package:loose/src/counter.dart';
+import 'document_shell.dart';
+import 'documenter.dart';
+import 'constants.dart' show dynamicNameToken;
+import 'loose_exception.dart';
+import 'loose.dart';
+import 'query/query_field.dart';
+import 'counter.dart';
 
 Future<String> _generateId() async {
   final random = Random.secure();

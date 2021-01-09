@@ -1,5 +1,5 @@
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/loose_response.dart';
+import 'document_shell.dart';
+import 'loose_response.dart';
 
 class ListResults<T extends DocumentShell<S>, S> extends LooseResponse {
   LooseListResponse<T, S> _documents;

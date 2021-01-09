@@ -1,5 +1,5 @@
 import 'package:loose/annotations.dart';
-import 'package:loose/src/document_info.dart';
+import 'document_info.dart';
 
 abstract class DocumentFields {}
 

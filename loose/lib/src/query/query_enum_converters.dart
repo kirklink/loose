@@ -1,4 +1,4 @@
-import 'package:loose/src/query/query_enums.dart';
+import 'query_enums.dart';
 
 String convertFieldOperator(FieldOp op) {
   switch (op) {

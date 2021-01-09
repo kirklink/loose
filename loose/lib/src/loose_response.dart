@@ -1,5 +1,5 @@
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/loose_exception.dart';
+import 'document_shell.dart';
+import 'loose_exception.dart';
 
 class LooseError {
   final int code;

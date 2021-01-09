@@ -1,5 +1,5 @@
-import 'package:loose/src/reference.dart';
-import 'package:loose/src/query/field_reference.dart';
+import '../reference.dart';
+import 'field_reference.dart';
 
 abstract class QueryField<T> {
   final String name;

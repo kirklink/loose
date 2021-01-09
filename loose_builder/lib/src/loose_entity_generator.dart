@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/src/builder/build_step.dart';
-import 'package:loose_builder/src/from_firestore_field_helpers.dart';
-import 'package:loose_builder/src/to_firestore_field_helpers.dart';
-import 'package:loose_builder/src/query_field_helpers.dart';
+import 'from_firestore_field_helpers.dart';
+import 'to_firestore_field_helpers.dart';
+import 'query_field_helpers.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'package:loose/annotations.dart';
-import 'package:loose_builder/src/loose_builder_exception.dart';
-import 'package:loose_builder/src/uses_identifier_helper.dart'
-    show usesIdentifier;
-import 'package:loose_builder/src/constants.dart' show documentIdFieldName;
+import 'loose_builder_exception.dart';
+import 'uses_identifier_helper.dart' show usesIdentifier;
+import 'constants.dart' show documentIdFieldName;
 
 final _checkForResource = const TypeChecker.fromRuntime(Resource);
 final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);

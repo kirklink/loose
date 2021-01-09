@@ -4,11 +4,10 @@ import 'package:source_gen/source_gen.dart';
 
 import 'package:loose/annotations.dart';
 
-import 'package:loose_builder/src/loose_builder_exception.dart';
-import 'package:loose_builder/src/recase_helper.dart';
-import 'package:loose_builder/src/constants.dart' show documentIdFieldName;
-import 'package:loose_builder/src/uses_identifier_helper.dart'
-    show usesIdentifier;
+import 'loose_builder_exception.dart';
+import 'recase_helper.dart';
+import 'constants.dart' show documentIdFieldName;
+import 'uses_identifier_helper.dart' show usesIdentifier;
 
 final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);
 final _checkForLooseMap = const TypeChecker.fromRuntime(LooseMap);

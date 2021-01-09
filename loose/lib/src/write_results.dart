@@ -1,4 +1,4 @@
-import 'package:loose/src/write.dart';
+import 'write.dart';
 
 class _WriteResult {
   final String _updateTime;

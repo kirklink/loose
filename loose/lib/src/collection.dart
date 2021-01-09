@@ -1,6 +1,6 @@
 // import 'package:loose/annotations.dart';
-import 'package:loose/src/resource.dart';
-import 'package:loose/src/document.dart';
+import 'resource.dart';
+import 'document.dart';
 
 class Collection extends Resource {
   const Collection(Document parent, String name) : super(parent, name);

@@ -1,6 +1,6 @@
-import 'package:loose/src/documenter.dart';
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/document_info.dart';
+import 'documenter.dart';
+import 'document_shell.dart';
+import 'document_info.dart';
 
 class BatchGetRequest<T extends DocumentShell<S>, S, R extends DocumentFields> {
   final Documenter<T, S, R> document;

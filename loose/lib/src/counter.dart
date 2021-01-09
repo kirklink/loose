@@ -1,6 +1,6 @@
 import 'dart:math' show Random;
-import 'package:loose/src/document.dart';
-import 'package:loose/src/loose_exception.dart';
+import 'document.dart';
+import 'loose_exception.dart';
 
 class Counter {
   final Document _document;

@@ -1,5 +1,5 @@
-import 'package:loose/src/case.dart';
-import 'package:loose/src/document.dart';
+import 'case.dart';
+import 'document.dart';
 
 /// The annotation to convert a Dart class into a Firebase document.
 ///

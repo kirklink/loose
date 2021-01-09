@@ -1,25 +1,23 @@
 import 'dart:convert' show json;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 
-import 'package:loose/src/loose_credentials.dart';
-import 'package:loose/src/documenter.dart';
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/loose_response.dart';
-import 'package:loose/src/reference.dart';
-import 'package:loose/src/firestore_database.dart';
-import 'package:loose/src/constants.dart';
-import 'package:loose/src/write.dart';
-import 'package:loose/src/write_results.dart';
-import 'package:loose/src/commit_result.dart';
-import 'package:loose/src/batch_get_request.dart';
-import 'package:loose/src/batch_get_result.dart';
-import 'package:loose/src/list_result.dart';
-import 'package:loose/src/loose_exception.dart';
-import 'package:loose/src/counter.dart';
-import 'package:loose/src/query/query.dart';
-import 'package:loose/src/query/query_field.dart';
-
+import './loose_credentials.dart';
+import 'documenter.dart';
+import 'document_shell.dart';
+import 'loose_response.dart';
+import 'reference.dart';
+import 'firestore_database.dart';
+import 'constants.dart';
+import 'write.dart';
+import 'write_results.dart';
+import 'commit_result.dart';
+import 'batch_get_request.dart';
+import 'batch_get_result.dart';
+import 'list_result.dart';
 import 'loose_exception.dart';
+import 'counter.dart';
+import 'query/query.dart';
+import 'query/query_field.dart';
 
 abstract class LooseErrors {
   static LooseError documentExists(String serverMessage) =>

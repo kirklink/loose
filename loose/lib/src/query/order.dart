@@ -1,6 +1,6 @@
-import 'package:loose/src/query/query_field.dart';
-import 'package:loose/src/query/query_enums.dart';
-import 'package:loose/src/query/query_enum_converters.dart';
+import 'query_field.dart';
+import 'query_enums.dart';
+import 'query_enum_converters.dart';
 
 class Order {
   final QueryField _field;

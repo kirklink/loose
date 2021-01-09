@@ -7,11 +7,10 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
-import 'package:loose_builder/src/recase_helper.dart';
-import 'package:loose_builder/src/uses_identifier_helper.dart'
-    show usesIdentifier;
-import 'package:loose_builder/src/loose_builder_exception.dart';
-import 'package:loose_builder/src/constants.dart' show documentIdFieldName;
+import 'recase_helper.dart';
+import 'uses_identifier_helper.dart' show usesIdentifier;
+import 'loose_builder_exception.dart';
+import 'constants.dart' show documentIdFieldName;
 import 'package:loose/annotations.dart';
 
 final _checkForLooseDocument = const TypeChecker.fromRuntime(LooseDocument);

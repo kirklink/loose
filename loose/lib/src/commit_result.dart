@@ -1,6 +1,6 @@
-import 'package:loose/src/batch_get_result.dart';
-import 'package:loose/src/loose_response.dart';
-import 'package:loose/src/write_results.dart';
+import 'batch_get_result.dart';
+import 'loose_response.dart';
+import 'write_results.dart';
 
 class CommitResult extends LooseResponse {
   WriteResults _writeResults;

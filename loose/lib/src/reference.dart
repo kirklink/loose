@@ -1,7 +1,7 @@
-import 'package:loose/src/documenter.dart';
-import 'package:loose/src/firestore_database.dart';
-import 'package:loose/src/loose_exception.dart';
-import 'package:loose/src/constants.dart';
+import 'documenter.dart';
+import 'firestore_database.dart';
+import 'loose_exception.dart';
+import 'constants.dart';
 
 import 'constants.dart';
 import 'constants.dart';

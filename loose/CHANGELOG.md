@@ -1,6 +1,11 @@
 # Loose Changelog
 
 
+## 0.0.69
+- Preparing for 0.1.0 release
+- Import syntax cleanup
+
+
 ## 0.0.68
 - Fix closing client when already closed
 - Fix bug in singleton

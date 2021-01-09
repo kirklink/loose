@@ -1,8 +1,8 @@
-import 'package:loose/src/loose_exception.dart';
-import 'package:loose/src/documenter.dart';
-import 'package:loose/src/document_shell.dart';
-import 'package:loose/src/query/filter.dart';
-import 'package:loose/src/query/order.dart';
+import '../loose_exception.dart';
+import '../documenter.dart';
+import '../document_shell.dart';
+import 'filter.dart';
+import 'order.dart';
 
 class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
   Filter _filter;

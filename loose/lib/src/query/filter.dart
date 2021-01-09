@@ -1,9 +1,7 @@
-import 'package:loose/annotations.dart';
-import 'package:loose/src/loose_exception.dart';
-import 'package:loose/src/query/query_field.dart';
-import 'package:loose/src/query/query_enums.dart';
-import 'package:loose/src/query/query_enum_converters.dart';
-import 'package:loose/src/reference.dart';
+import '../loose_exception.dart';
+import 'query_field.dart';
+import 'query_enums.dart';
+import 'query_enum_converters.dart';
 
 // abstract class BaseFilter {
 //   Map<String, Object> encode();
