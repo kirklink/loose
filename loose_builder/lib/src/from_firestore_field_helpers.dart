@@ -200,7 +200,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
         final elementType = elementTypes.first;
         final listBuf = StringBuffer();
-        listBuf.write("FromFs.list(m['${field.name}'], ");
+        listBuf.write("FromFs.list(m['${dbname}'], ");
         if (elementType.isDartCoreString) {
           listBuf.write('(e) => FromFs.string(e, allowNull: true)');
         } else if (elementType.isDartCoreInt) {

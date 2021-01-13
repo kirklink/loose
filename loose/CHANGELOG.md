@@ -4,7 +4,7 @@
 ## 0.0.69
 - Preparing for 0.1.0 release
 - Import syntax cleanup
-
+- Fix renaming array fields from Firestore
 
 ## 0.0.68
 - Fix closing client when already closed
