@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.70
+- Fix issue with nested collection path
+
 ## 0.0.69
 - Preparing for 0.1.0 release
 - Import syntax cleanup

@@ -5,9 +5,9 @@ class DocumentInfo {
   const DocumentInfo(this.name, this.collection, this.pathToCollection);
   String get path {
     if (pathToCollection == '/') {
-      return '/$collection'; 
+      return '/$collection';
     } else {
-      return '/$pathToCollection/$collection';
+      return '$pathToCollection/$collection';
     }
   }
 }
