@@ -281,7 +281,7 @@ class Loose {
 
     final resBody = json.decode(res.body);
     if (ignoreContent) {
-      final shell = document.fromFirestore(const {}, '', '', '');
+      final shell = DocumentShell(const {}, '', '', '') as T;
       return LooseEntityResponse(shell);
     } else {
       final shell = document.fromFirestore(
@@ -303,9 +303,7 @@ class Loose {
   }
 
   Future<bool> exists(Documenter document,
-      {List<String> idPath = const [],
-      bool keepClientOpen = false,
-      bool bypassTransaction = false}) async {
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
     final res = await _readImpl(document,
         idPath: idPath, ignoreContent: true, keepClientOpen: keepClientOpen);
     if (!res.ok || res.error.isNotFound) {

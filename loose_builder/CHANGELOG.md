@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.71
+- Completely ignore content when checking existance
+
 ## 0.0.70
 - Fix issue with nested collection path
 

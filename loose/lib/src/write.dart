@@ -55,8 +55,8 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends DocumentFields,
       final documentName = '${databaseRoot}${workingPath}/${id}';
       final path = List<String>.from(_idPath, growable: true)
         ..add(documentName);
-      final tryAgain = await _loose.exists(_document,
-          idPath: path, keepClientOpen: true, bypassTransaction: true);
+      final tryAgain =
+          await _loose.exists(_document, idPath: path, keepClientOpen: true);
       if (!tryAgain) {
         return documentName;
       } else {
