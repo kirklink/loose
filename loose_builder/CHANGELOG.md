@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.72
+- Fix problem with renamed fields
+
 ## 0.0.71
 - Completely ignore content when checking existance
 

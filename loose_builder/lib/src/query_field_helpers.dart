@@ -107,7 +107,7 @@ String convertToQueryField(FieldElement field, int recase,
     final parentsString =
         fieldParents.map((e) => recaseFieldName(recase, e)).toList().join('.');
     final dbFieldName = recaseFieldName(recase, field.name);
-    dbName = '$parentsString.$dbFieldName';
+    dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbFieldName';
     // dbName = '{$parents.map((e) => recaseFieldName(recase, e)).join(".")}.${recaseFieldName(recase, field.name)}';
   }
 
@@ -123,7 +123,7 @@ String convertToQueryField(FieldElement field, int recase,
           .map((e) => recaseFieldName(recase, e))
           .toList()
           .join('.');
-      dbName = '$parentsString.$rename';
+      dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$rename';
     }
     // } else {
     //   return '';
