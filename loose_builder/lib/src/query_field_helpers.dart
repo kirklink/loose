@@ -96,11 +96,14 @@ String createDocumentFields(ClassElement element, int recase,
 String convertToQueryField(FieldElement field, int recase,
     [List<String> fieldParents = const <String>[]]) {
   var fieldName = field.name;
+
+  fieldName = recaseFieldName(recase, fieldName);
+
   if (field.isPrivate) {
     fieldName = '\$' + fieldName;
   }
 
-  var dbName = recaseFieldName(recase, field.name);
+  var dbName = fieldName;
 
   final reader = ConstantReader(_checkForLooseField.firstAnnotationOf(field));
   final canQuery = reader.peek('canQuery')?.boolValue ?? true;
@@ -115,11 +118,12 @@ String convertToQueryField(FieldElement field, int recase,
     parentsString =
         fieldParents.map((e) => recaseFieldName(recase, e)).toList().join('.');
   }
-  var dbFieldName = recaseFieldName(recase, field.name);
+
+  // var dbFieldName = recaseFieldName(recase, field.name);
   if (rename.isNotEmpty) {
-    dbFieldName = rename;
+    dbName = rename;
   }
-  dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbFieldName';
+  dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbName';
 
   if (field.type.isDartCoreString) {
     return "final $fieldName = StringField('$dbName');";
@@ -168,6 +172,10 @@ String convertToQueryField(FieldElement field, int recase,
     } else if (elementType.getDisplayString(withNullability: false) ==
         'Reference') {
       buf.write("(Reference e) => {'referenceValue': e.toString()}");
+    } else if (_checkForLooseDocument
+            .hasAnnotationOfExact(elementType.element) ||
+        _checkForLooseMap.hasAnnotationOfExact(elementType.element)) {
+      buf.write("(Map e) => {'mapValue': e}");
     } else {
       return '';
     }

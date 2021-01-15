@@ -1,6 +1,9 @@
 # Loose Builder Changelog
 
 
+## 0.0.74
+- Fix URL encoding for update calls
+
 ## 0.0.73
 - Allow renaming of nested fields
 

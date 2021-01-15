@@ -189,6 +189,8 @@ class Loose {
     var docId = '';
     if (document.location.name == dynamicNameToken && !autoAssignId) {
       docId = idPath.removeLast();
+    } else if (document.location.name != dynamicNameToken) {
+      docId = document.location.name;
     }
 
     var workingPath = '${document.location.path}';
@@ -209,7 +211,6 @@ class Loose {
     // if (_transactionId.isNotEmpty) {
     //   queryParameters.addAll({'transaction': _transactionId});
     // }
-
     if (docId.isNotEmpty) {
       queryParameters.addAll({'documentId': docId});
     }
@@ -332,12 +333,17 @@ class Loose {
 
     _client ??= await _createClient();
 
-    var params = '?currentDocument.exists=true';
-    for (final field in updateFields) {
-      params = params + '&updateMask.fieldPaths=' + field.name;
-    }
+    var params = <String, dynamic>{
+      'currentDocument.exists': 'true',
+      'updateMask.fieldPaths':
+          updateFields.map((e) => e.name).toList(growable: false)
+    };
 
-    final uri = Uri.https(authority, '${_database.rootPath}${workingPath}');
+    final uri = Uri(
+        scheme: 'https',
+        host: authority,
+        path: '${_database.rootPath}${workingPath}',
+        queryParameters: params);
     final reqBody = document.toFirestoreFields();
 
     if (printFields) {
