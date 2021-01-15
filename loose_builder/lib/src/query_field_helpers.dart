@@ -102,32 +102,24 @@ String convertToQueryField(FieldElement field, int recase,
 
   var dbName = recaseFieldName(recase, field.name);
 
-  if (fieldParents.isNotEmpty) {
-    // fieldName = '${parents.join('.')}.${field.name}';
-    final parentsString =
-        fieldParents.map((e) => recaseFieldName(recase, e)).toList().join('.');
-    final dbFieldName = recaseFieldName(recase, field.name);
-    dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbFieldName';
-    // dbName = '{$parents.map((e) => recaseFieldName(recase, e)).join(".")}.${recaseFieldName(recase, field.name)}';
+  final reader = ConstantReader(_checkForLooseField.firstAnnotationOf(field));
+  final canQuery = reader.peek('canQuery')?.boolValue ?? true;
+  final rename = reader.peek('name')?.stringValue ?? '';
+
+  if (!canQuery) {
+    return '';
   }
 
-  if (_checkForLooseField.hasAnnotationOfExact(field)) {
-    final reader = ConstantReader(_checkForLooseField.firstAnnotationOf(field));
-    final canQuery = reader.peek('canQuery')?.boolValue ?? true;
-    if (!canQuery) {
-      return '';
-    }
-    final rename = reader.peek('name')?.stringValue ?? '';
-    if (rename.isNotEmpty) {
-      final parentsString = fieldParents
-          .map((e) => recaseFieldName(recase, e))
-          .toList()
-          .join('.');
-      dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$rename';
-    }
-    // } else {
-    //   return '';
+  var parentsString = '';
+  if (fieldParents.isNotEmpty) {
+    parentsString =
+        fieldParents.map((e) => recaseFieldName(recase, e)).toList().join('.');
   }
+  var dbFieldName = recaseFieldName(recase, field.name);
+  if (rename.isNotEmpty) {
+    dbFieldName = rename;
+  }
+  dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbFieldName';
 
   if (field.type.isDartCoreString) {
     return "final $fieldName = StringField('$dbName');";

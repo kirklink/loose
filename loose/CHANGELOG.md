@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.73
+- Allow renaming of nested fields
+
 ## 0.0.72
 - Fix problem with renamed fields
 
