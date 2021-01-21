@@ -121,20 +121,21 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends DocumentFields,
 
 class WriteUpdate<T extends DocumentShell<S>, S, R extends DocumentFields,
     Q extends QueryField> implements Writable {
-  final List<String> _idPath;
   final Documenter<T, S, R> _document;
   final List<Q> _updateFields;
+  List<String> _idPath;
   List<FieldTransform> _transforms;
   @override
   final String label;
 
   WriteUpdate(
     this._document,
-    this._idPath,
     this._updateFields, {
+    List<String> idPath = const [],
     List<FieldTransform> transforms,
     this.label = '',
   }) {
+    _idPath = idPath;
     _transforms = transforms;
   }
 
@@ -288,8 +289,8 @@ abstract class Write {
   static WriteUpdate<T, S, R, Q> update<T extends DocumentShell<S>, S,
       R extends DocumentFields, Q extends QueryField>(
     Documenter<T, S, R> document,
-    List<String> idPath,
     List<Q> updateFields, {
+    List<String> idPath = const [],
     List<FieldTransform> transforms = const [],
     String label = '',
   }) {

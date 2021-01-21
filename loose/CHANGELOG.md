@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.76
+- Fix write update api
+
 ## 0.0.75
 - Better query encoding
 
