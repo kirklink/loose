@@ -1,5 +1,7 @@
 # Loose Changelog
 
+## 0.0.77
+- Fix oopsie in write update api
 
 ## 0.0.76
 - Fix write update api

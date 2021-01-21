@@ -294,8 +294,8 @@ abstract class Write {
     List<FieldTransform> transforms = const [],
     String label = '',
   }) {
-    return WriteUpdate(document, idPath, updateFields,
-        transforms: transforms, label: label);
+    return WriteUpdate(document, updateFields,
+        idPath: idPath, transforms: transforms, label: label);
   }
 
   static WriteDelete<T, S, R>
