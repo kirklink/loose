@@ -58,16 +58,24 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
   }
 
   Map<String, Object> encode() {
-    return {
-      'structuredQuery': {
-        'from': [
-          {'collectionId': document.location.collection}
-        ],
-        'where': _filter?.encode() ?? const {},
-        'orderBy': _orders.map((e) => e.encode).toList(),
-        'offset': _offset,
-        'limit': _limit,
-      }
+    final structuredQuery = <String, Object>{
+      'from': [
+        {'collectionId': document.location.collection}
+      ]
     };
+    if (_filter != null) {
+      structuredQuery.addAll({'where': _filter?.encode() ?? const {}});
+    }
+    if (_orders.isNotEmpty) {
+      structuredQuery
+          .addAll({'orderBy': _orders.map((e) => e.encode).toList()});
+    }
+    if (_offset != null) {
+      structuredQuery.addAll({'offset': _offset});
+    }
+    if (_limit != null) {
+      structuredQuery.addAll({'limit': _limit});
+    }
+    return {'structuredQuery': structuredQuery};
   }
 }

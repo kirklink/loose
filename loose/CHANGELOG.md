@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.75
+- Better query encoding
+
 ## 0.0.74
 - Fix URL encoding for update calls
 
