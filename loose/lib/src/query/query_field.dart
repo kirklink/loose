@@ -1,5 +1,4 @@
 import '../reference.dart';
-import 'field_reference.dart';
 
 abstract class QueryField<T> {
   final String name;

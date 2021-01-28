@@ -1,5 +1,8 @@
 # Loose Builder Changelog
 
+## 0.0.78
+- Update Write path resolution
+
 ## 0.0.77
 - Fix oopsie in write update api
 

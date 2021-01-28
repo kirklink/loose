@@ -142,7 +142,7 @@ class WriteUpdate<T extends DocumentShell<S>, S, R extends DocumentFields,
   @override
   Future<Map<String, Object>> encode([String databaseRoot = '']) async {
     var workingPath =
-        '${databaseRoot}/${_document.location.collection}/${_document.location.name}';
+        '${databaseRoot}/${_document.location.path}/${_document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != _idPath.length) {
       throw LooseException(
@@ -187,7 +187,7 @@ class WriteDelete<T extends DocumentShell<S>, S, R extends DocumentFields>
   @override
   Future<Map<String, Object>> encode([String databaseRoot = '']) async {
     var workingPath =
-        '${databaseRoot}/${_document.location.collection}/${_document.location.name}';
+        '${databaseRoot}/${_document.location.path}/${_document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != _idPath.length) {
       throw LooseException(
@@ -226,7 +226,7 @@ class WriteTransform<T extends DocumentShell<S>, S, R extends DocumentFields>
   @override
   Future<Map<String, Object>> encode([String databaseRoot = '']) async {
     var workingPath =
-        '${databaseRoot}/${_document.location.collection}/${_document.location.name}';
+        '${databaseRoot}/${_document.location.path}/${_document.location.name}';
     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
     if (ancestorCount != _idPath.length) {
       throw LooseException(
