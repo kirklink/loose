@@ -1,6 +1,9 @@
 # Loose Changelog
 
 
+## 0.0.79
+- Update Write path resolution
+
 ## 0.0.78
 - Update Write path resolution
 
