@@ -1,10 +1,9 @@
 import 'package:loose/annotations.dart';
 import 'document_info.dart';
 
-abstract class DocumentFields {}
+// abstract class DocumentFields {}
 
-abstract class Documenter<T extends DocumentShell, S,
-    R extends DocumentFields> {
+abstract class Documenter<T extends DocumentShell, S, R> {
   Map<String, Object> toFirestoreFields();
   T fromFirestore(Map<String, Object> fields, String name, String createTime,
       String updateTime);
