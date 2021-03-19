@@ -1,9 +1,9 @@
-import 'document_shell.dart';
+import 'document_response.dart';
 import 'loose_response.dart';
 
-class ListResults<T extends DocumentShell<S>, S> extends LooseResponse {
-  LooseListResponse<T, S> _documents;
-  LooseListResponse<T, S> get documents => _documents;
+class ListResults<DocumentResponse> extends LooseResponse {
+  LooseListResponse<DocumentResponse> _documents;
+  LooseListResponse<DocumentResponse> get documents => _documents;
   String _nextPageToken;
   String get nextPageToken => _nextPageToken;
 

@@ -1,7 +1,7 @@
 import 'document_shell.dart';
 import 'loose_response.dart';
 
-class BatchGetResults<T extends DocumentShell<S>, S> extends LooseResponse {
+class BatchGetResults<T extends DocumentResponse<S>, S> extends LooseResponse {
   LooseListResponse<T, S> _found;
   LooseListResponse<T, S> get found => _found;
   List<String> _missing;

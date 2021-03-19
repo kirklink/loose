@@ -1,20 +1,21 @@
 import '../loose_exception.dart';
-import '../documenter.dart';
-import '../document_shell.dart';
+// import '../documenter.dart';
+// import '../document_shell.dart';
+import '../document.dart';
 import 'filter.dart';
 import 'order.dart';
 
-class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
+class Query {
   Filter _filter;
   final _orders = <Order>[];
   int _limit;
   int _offset;
 
-  final Documenter<T, S, R> document;
+  // final Document document;
 
   Query(this.document);
 
-  R get fields => document.fields;
+  // R get fields => document.fields;
 
   void filter(Filter filter) {
     if (_filter != null) {
@@ -60,7 +61,7 @@ class Query<T extends DocumentShell<S>, S, R extends DocumentFields> {
   Map<String, Object> encode() {
     final structuredQuery = <String, Object>{
       'from': [
-        {'collectionId': document.location.collection}
+        {'collectionId': document.parent.name}
       ]
     };
     if (_filter != null) {

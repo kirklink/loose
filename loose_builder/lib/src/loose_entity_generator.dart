@@ -22,14 +22,14 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
       throw ('LooseDocument must only annotate a class.');
     }
 
-    var $firestore = (element as ClassElement).getField('\$firestore');
-    if ($firestore == null || !$firestore.isStatic || !$firestore.isFinal) {
+    var $loose = (element as ClassElement).getField('\$loose');
+    if ($loose == null || !$loose.isStatic || !$loose.isFinal) {
       var buf = StringBuffer();
       var documentClass = "${element.name}Document";
       buf.writeln(
-          '\nThe LooseDocuement class "${element.name}" must have a final static field "\$firestore".');
+          '\nThe LooseDocument class "${element.name}" must have a final static field "\$loose".');
       buf.writeln(
-          'Add this to ${element.name}: static final \$firestore = _\$$documentClass();');
+          'Add this to ${element.name}: static final \$loose = _\$$documentClass();');
       throw LooseBuilderException(buf.toString());
     }
 
@@ -104,46 +104,32 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
       classBuf.writeln('');
     }
 
-    classBuf.writeln(
-        'class $documentName extends DocumentShell<$className> implements Documenter<$documentName, $className, _\$${className}Fields> {');
-    classBuf.writeln('');
-    classBuf.writeln(
-        "$documentName([$className entity, String name = '', String createdAt = '', String updatedAt = ''])");
-    classBuf.writeln('  : super(entity, name, createdAt, updatedAt);');
-    classBuf.writeln('');
+    classBuf
+        .writeln('class $documentName extends DocumentRequest<$className> {');
     classBuf.writeln('@override');
-    classBuf.writeln(
-        "final location = DocumentInfo('$name', '$collection', '/${path.reversed.join('/')}');");
-    classBuf.writeln('');
-    classBuf.writeln('@override');
+    classBuf.writeln('final Document document;');
+    classBuf.writeln('$documentName(this.document);');
     classBuf.writeln(
         'final _\$${className}Fields fields = _\$${className}Fields();');
-    classBuf.writeln('');
     classBuf.writeln('@override');
     classBuf.writeln(
-        '$documentName from($className entity) => $documentName(entity);');
-    classBuf.writeln('');
-    classBuf.writeln('@override');
-    classBuf.writeln(
-        '$documentName fromFirestore(Map<String, Object> m, String name, String createTime, String updateTime) {');
+        'DocumentResponse<$className> fromFirestore(Map<String, Object> m) {');
+    classBuf.writeln("final f = m['fields'] as Map<String, Object>;");
 
     // fromFields
     classBuf.writeln(
         convertFromFirestore(element, recase, allowNulls, readonlyNulls));
 
     if (usesIdentifier(element)) {
-      classBuf.write("..$documentIdFieldName = name.split('/').last");
+      classBuf.write(
+          "..$documentIdFieldName = (m['name'] as String).split('/').last");
     }
     classBuf.writeln(';');
 
     // !fromFields
-    classBuf
-        .writeln(('return $documentName(e, name, createTime, updateTime);'));
-    classBuf.writeln('}');
-    classBuf.writeln('');
+    classBuf.writeln(('return DocumentResponse(e, m);}'));
     classBuf.writeln('@override');
-    classBuf.writeln('Map<String, Object> toFirestoreFields() {');
-    classBuf.writeln('final e = entity;');
+    classBuf.writeln('Map<String, Object> toFirestore($className e) {');
     classBuf.write("return {'fields': ");
     // toFields
     final converted = convertToFirestore(

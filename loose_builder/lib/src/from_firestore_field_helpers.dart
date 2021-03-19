@@ -126,23 +126,23 @@ String convertFromFirestore(ClassElement clazz, int recase,
       var converter = '';
       if (field.type.isDartCoreString) {
         converter =
-            "FromFs.string(m['${dbname}'], name: '${displayName}'$mode)";
+            "FromFs.string(f['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreInt) {
         converter =
-            "FromFs.integer(m['${dbname}'], name: '${displayName}'$mode)";
+            "FromFs.integer(f['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreDouble) {
-        converter = "FromFs.float(m['${dbname}'], name: '${displayName}'$mode)";
+        converter = "FromFs.float(f['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.isDartCoreBool) {
         converter =
-            "FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)";
+            "FromFs.boolean(f['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
         converter =
-            "FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)";
+            "FromFs.datetime(f['${dbname}'], name: '${displayName}'$mode)";
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
         converter =
-            "FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)";
+            "FromFs.reference(f['${dbname}'], name: '${displayName}'$mode)";
 
         // Map
       } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
@@ -176,7 +176,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
 
         final mapBuf = StringBuffer();
-        mapBuf.writeln("FromFs.map(m['${dbname}'], (m) => ");
+        mapBuf.writeln("FromFs.map(f['${dbname}'], (m) => ");
         mapBuf.writeln(
             '${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, parent: displayName, nestLevel: nestLevel)}');
         mapBuf.writeln(", name: '${displayName}'$mode)");
@@ -200,7 +200,7 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
         final elementType = elementTypes.first;
         final listBuf = StringBuffer();
-        listBuf.write("FromFs.list(m['${dbname}'], ");
+        listBuf.write("FromFs.list(f['${dbname}'], ");
         if (elementType.isDartCoreString) {
           listBuf.write('(e) => FromFs.string(e, allowNull: true)');
         } else if (elementType.isDartCoreInt) {

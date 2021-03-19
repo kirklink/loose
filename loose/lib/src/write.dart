@@ -25,7 +25,7 @@ abstract class Writable {
   String get label;
 }
 
-class WriteCreate<T extends DocumentShell<S>, S, R extends DocumentFields,
+class WriteCreate<T extends DocumentResponse<S>, S, R extends DocumentFields,
     Q extends QueryField> implements Writable {
   bool _autoAssignId = false;
   List<String> _idPath;
@@ -119,7 +119,7 @@ class WriteCreate<T extends DocumentShell<S>, S, R extends DocumentFields,
   }
 }
 
-class WriteUpdate<T extends DocumentShell<S>, S, R extends DocumentFields,
+class WriteUpdate<T extends DocumentResponse<S>, S, R extends DocumentFields,
     Q extends QueryField> implements Writable {
   final Documenter<T, S, R> _document;
   final List<Q> _updateFields;
@@ -169,7 +169,7 @@ class WriteUpdate<T extends DocumentShell<S>, S, R extends DocumentFields,
   }
 }
 
-class WriteDelete<T extends DocumentShell<S>, S, R extends DocumentFields>
+class WriteDelete<T extends DocumentResponse<S>, S, R extends DocumentFields>
     implements Writable {
   List<String> _idPath;
   final Documenter<T, S, R> _document;
@@ -203,7 +203,7 @@ class WriteDelete<T extends DocumentShell<S>, S, R extends DocumentFields>
   }
 }
 
-class WriteTransform<T extends DocumentShell<S>, S, R extends DocumentFields>
+class WriteTransform<T extends DocumentResponse<S>, S, R extends DocumentFields>
     implements Writable {
   List<String> _idPath;
   final Documenter<T, S, R> _document;
@@ -269,7 +269,7 @@ class WriteCounter implements Writable {
 
 abstract class Write {
   // Write._();
-  static WriteCreate<T, S, R, Q> create<T extends DocumentShell<S>, S,
+  static WriteCreate<T, S, R, Q> create<T extends DocumentResponse<S>, S,
       R extends DocumentFields, Q extends QueryField>(
     Documenter<T, S, R> document, {
     List<String> idPath = const [],
@@ -286,7 +286,7 @@ abstract class Write {
         label: label);
   }
 
-  static WriteUpdate<T, S, R, Q> update<T extends DocumentShell<S>, S,
+  static WriteUpdate<T, S, R, Q> update<T extends DocumentResponse<S>, S,
       R extends DocumentFields, Q extends QueryField>(
     Documenter<T, S, R> document,
     List<Q> updateFields, {
@@ -299,7 +299,7 @@ abstract class Write {
   }
 
   static WriteDelete<T, S, R>
-      delete<T extends DocumentShell<S>, S, R extends DocumentFields>(
+      delete<T extends DocumentResponse<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document,
           {List<String> idPath = const [],
           String label = ''}) {
@@ -307,7 +307,7 @@ abstract class Write {
   }
 
   static WriteTransform<T, S, R>
-      transform<T extends DocumentShell<S>, S, R extends DocumentFields>(
+      transform<T extends DocumentResponse<S>, S, R extends DocumentFields>(
           Documenter<T, S, R> document, List<FieldTransform> transforms,
           {List<String> idPath = const [], String label = ''}) {
     return WriteTransform(document, transforms, idPath: idPath, label: label);

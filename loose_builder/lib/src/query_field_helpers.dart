@@ -38,8 +38,7 @@ String createDocumentFields(ClassElement element, int recase,
 
   final qClassBuf = StringBuffer();
   final qFieldsBuf = StringBuffer();
-  qClassBuf.writeln(
-      'class ${privatePrefix}\$${className}Fields extends DocumentFields {');
+  qClassBuf.writeln('class ${privatePrefix}\$${className}Fields {');
 
   for (final klass in classElements) {
     for (final field in klass.fields) {

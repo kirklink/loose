@@ -1,4 +1,4 @@
-import 'document_shell.dart';
+import 'document_response.dart';
 import 'loose_exception.dart';
 
 class LooseError {
@@ -15,7 +15,7 @@ class LooseError {
   static const LooseError empty = LooseError._();
 }
 
-abstract class LooseResponse<T extends DocumentShell<S>, S> {
+abstract class LooseResponse {
   LooseError _error;
 
   bool get ok => LooseError.empty == _error;
@@ -29,56 +29,56 @@ abstract class LooseResponse<T extends DocumentShell<S>, S> {
   LooseResponse.fail(this._error);
 }
 
-class LooseEntityResponse<T extends DocumentShell<S>, S> extends LooseResponse {
-  DocumentShell<S> _shell;
+class LooseEntityResponse<T> extends LooseResponse {
+  DocumentResponse<T> _response;
 
   @override
   int get count => ok ? 1 : 0;
 
-  LooseEntityResponse(this._shell) : super();
+  LooseEntityResponse(this._response) : super();
 
   LooseEntityResponse.fail(LooseError error) : super.fail(error);
 
-  S get entity {
+  T get entity {
     if (!ok) {
       throw LooseException(
           'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
-    return _shell.entity;
+    return _response.entity;
   }
 
-  DocumentShell<S> get document {
+  DocumentResponse<T> get document {
     if (!ok) {
       throw LooseException(
           'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
-    return _shell;
+    return _response;
   }
 }
 
-class LooseListResponse<T extends DocumentShell<S>, S> extends LooseResponse {
-  List<T> _shellList;
+class LooseListResponse<T> extends LooseResponse {
+  List<DocumentResponse<T>> _responseList;
 
   @override
-  int get count => ok ? _shellList.length : 0;
+  int get count => ok ? _responseList.length : 0;
 
-  LooseListResponse(this._shellList) : super();
+  LooseListResponse(this._responseList) : super();
 
   LooseListResponse.fail(LooseError error) : super.fail(error);
 
-  List<S> get entities {
+  List<T> get entities {
     if (!ok) {
       throw LooseException(
           'No documents were returned. Handle error if LooseResponse.ok is not true.');
     }
-    return _shellList.map((DocumentShell<S> e) => e.entity).toList();
+    return _responseList.map((DocumentResponse<T> e) => e.entity).toList();
   }
 
-  List<T> get documents {
+  List<DocumentResponse<T>> get documents {
     if (!ok) {
       throw LooseException(
           'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
-    return _shellList;
+    return _responseList;
   }
 }
