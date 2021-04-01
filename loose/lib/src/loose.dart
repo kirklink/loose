@@ -211,10 +211,6 @@ class Loose {
       bool autoAssignId = false,
       bool printFields = false,
       bool keepClientOpen = false}) async {
-    print(request.document.id);
-    print(request.document.path);
-    print(request.document.parent.parent.path);
-
     final tokenCount =
         dynamicNameToken.allMatches(request.document.path).length;
     var idCount = autoAssignId ? idPath.length + 1 : idPath.length;
