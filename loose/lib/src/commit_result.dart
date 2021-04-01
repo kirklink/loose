@@ -1,4 +1,3 @@
-import 'batch_get_result.dart';
 import 'loose_response.dart';
 import 'write_results.dart';
 
@@ -13,6 +12,8 @@ class CommitResult extends LooseResponse {
   int get count => _writeResults.results.length;
 
   DateTime get commitTime => DateTime.tryParse(_commitTime ?? '');
+
+  WriteResults get writeResults => _writeResults;
 
   CommitResult(this._writeResults, this._commitTime) : super();
   CommitResult.fail(LooseError error) : super.fail(error);

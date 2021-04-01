@@ -1,108 +1,125 @@
-import 'dart:math' show Random;
-import 'dart:convert' show base64;
-import 'document_shell.dart';
-import 'documenter.dart';
-import 'constants.dart' show dynamicNameToken;
-import 'loose_exception.dart';
-import 'loose.dart';
-import 'query/query_field.dart';
-import 'counter.dart';
+import 'dart:math' as math;
 
-Future<String> _generateId() async {
-  final random = Random.secure();
-  final values = List<int>.generate(20, (index) => random.nextInt(256));
-  var key = base64.encode(values);
-  if (key.length > 20) {
-    key = List<String>.generate(20, (index) => key[random.nextInt(key.length)])
-        .join();
+import 'package:uuid/uuid.dart';
+import 'package:uuid/uuid_util.dart';
+
+import 'document_request.dart';
+import 'constants.dart';
+import 'loose.dart';
+import 'loose_exception.dart';
+import 'counter.dart';
+import 'query/query_field.dart';
+import 'transformer.dart';
+
+class Write<T> {
+  final DocumentRequest<T> _request;
+
+  Write(this._request);
+
+  WriteCreate<T> create(T entity,
+      {List<String> idPath = const [],
+      bool autoAssignId = false,
+      List<Transformer> transforms = const [],
+      String label = ''}) {
+    return WriteCreate(
+        _request, entity, idPath, autoAssignId, transforms, label);
   }
-  key = key.replaceAll('/', '_');
-  return key;
+
+  WriteUpdate<T> update(T entity, List<QueryField> updateFields,
+      {List<String> idPath = const [],
+      List<Transformer> transforms = const [],
+      String label = ''}) {
+    return WriteUpdate(
+        _request, entity, updateFields, idPath, transforms, label);
+  }
+
+  WriteDelete delete({
+    List<String> idPath = const [],
+    String label = '',
+  }) {
+    return WriteDelete(_request, idPath, label);
+  }
+
+  WriteTransform transform(List<Transformer> tranformers,
+      {List<String> idPath = const [], String label = ''}) {
+    return WriteTransform(_request, tranformers, idPath, label);
+  }
+
+  static WriteCountHandler counter(Counter counter,
+      {List<String> idPath = const []}) {
+    return WriteCountHandler(counter, idPath);
+  }
+}
+
+class WriteCountHandler {
+  final Counter _counter;
+  final List<String> _idPath;
+  WriteCountHandler(this._counter, this._idPath);
+  WriteCounter increase({int by = 1, String label = ''}) {
+    return WriteCounter(_counter, by, _idPath, label);
+  }
+
+  WriteCounter decrease({int by = 1, String label = ''}) {
+    return WriteCounter(_counter, by * -1, _idPath, label);
+  }
 }
 
 abstract class Writable {
-  Future<Map<String, Object>> encode([String databaseRoot = '']);
+  Map<String, Object> write(Loose loose);
   String get label;
+  String get name;
 }
 
-class WriteCreate<T extends DocumentResponse<S>, S, R extends DocumentFields,
-    Q extends QueryField> implements Writable {
-  bool _autoAssignId = false;
+String _generateId() {
+  // https://stackoverflow.com/questions/55674071/firebase-firestore-addding-new-document-inside-a-transaction-transaction-add-i
+  const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var autoId = '';
+  for (var i = 0; i < 20; i++) {
+    autoId += chars[math.Random.secure().nextInt(chars.length)];
+  }
+  return autoId;
+}
+
+class WriteCreate<T> implements Writable {
+  final DocumentRequest<T> _request;
+  final bool _autoAssignId;
   List<String> _idPath;
-  Documenter<T, S, R> _document;
-  Loose _loose;
-  List<FieldTransform> _transforms;
+  final List<Transformer> _transforms;
+  final T _entity;
   @override
   final String label;
+  String _workingPath = '';
+  @override
+  String get name => _workingPath;
 
-  WriteCreate(Documenter<T, S, R> document,
-      {List<String> idPath = const [],
-      bool autoAssignId = false,
-      Loose checkIdWith,
-      List<FieldTransform> transforms = const [],
-      this.label = ''}) {
-    _autoAssignId = autoAssignId;
-    _idPath = idPath;
-    _document = document;
-    _loose = checkIdWith;
-    _transforms = transforms;
-  }
+  WriteCreate(this._request, this._entity, List<String> idPath,
+      this._autoAssignId, this._transforms, this.label) {
+    _idPath = List.of(idPath);
+    if (_autoAssignId) {
+      _idPath.add(_generateId());
+    }
+    final tokenCount =
+        dynamicNameToken.allMatches(_request.document.path).length;
+    if (tokenCount != _idPath.length) {
+      throw LooseException(
+          '${_idPath.length} ids provided and $tokenCount are required.');
+    }
 
-  Future<String> _getCleanId(String databaseRoot, String workingPath) async {
-    var y = 1;
-    for (var x = 0; x <= y; x++) {
-      final id = await _generateId();
-      final documentName = '${databaseRoot}${workingPath}/${id}';
-      final path = List<String>.from(_idPath, growable: true)
-        ..add(documentName);
-      final tryAgain =
-          await _loose.exists(_document, idPath: path, keepClientOpen: true);
-      if (!tryAgain) {
-        return documentName;
-      } else {
-        y++;
-      }
+    _workingPath = _request.document.path;
+
+    for (final id in _idPath) {
+      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
     }
   }
 
   @override
-  Future<Map<String, Object>> encode([String databaseRoot = '']) async {
-    if (_document.location.name == dynamicNameToken &&
-        _idPath.isEmpty &&
-        !_autoAssignId) {
-      throw LooseException(
-          'A name is required for this document but was not provided in idPath.');
-    }
+  Map<String, Object> write(Loose loose) {
+    final document = _request.toFirestore(_entity);
 
-    var docId = '';
-    if (_document.location.name == dynamicNameToken && !_autoAssignId) {
-      docId = _idPath.removeLast();
-    }
+    var name = '${loose.documentRoot}${_workingPath}';
 
-    var workingPath = '${_document.location.path}';
-
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-
-    if (ancestorCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ancestor ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in _idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-
-    final document = _document.toFirestoreFields();
-
-    if (docId.isNotEmpty) {
-      document.addAll({'name': '${databaseRoot}${workingPath}/${docId}'});
-    } else {
-      var documentName = '';
-      if (_loose != null) {
-        documentName = await _getCleanId(databaseRoot, workingPath);
-      }
-
-      document.addAll({'name': documentName});
-    }
+    document.addAll({'name': name});
 
     final currentDocument = {'exists': false};
 
@@ -119,43 +136,41 @@ class WriteCreate<T extends DocumentResponse<S>, S, R extends DocumentFields,
   }
 }
 
-class WriteUpdate<T extends DocumentResponse<S>, S, R extends DocumentFields,
-    Q extends QueryField> implements Writable {
-  final Documenter<T, S, R> _document;
-  final List<Q> _updateFields;
-  List<String> _idPath;
-  List<FieldTransform> _transforms;
+class WriteUpdate<T> implements Writable {
+  final DocumentRequest<T> _request;
+  final List<QueryField> _updateFields;
+  final List<String> _idPath;
+  final List<Transformer> _transforms;
+  final T _entity;
   @override
   final String label;
+  String _workingPath;
+  @override
+  String get name => _workingPath;
 
-  WriteUpdate(
-    this._document,
-    this._updateFields, {
-    List<String> idPath = const [],
-    List<FieldTransform> transforms,
-    this.label = '',
-  }) {
-    _idPath = idPath;
-    _transforms = transforms;
+  WriteUpdate(this._request, this._entity, this._updateFields, this._idPath,
+      this._transforms, this.label) {
+    final tokenCount =
+        dynamicNameToken.allMatches(_request.document.path).length;
+    if (tokenCount != _idPath.length) {
+      throw LooseException(
+          '${_idPath.length} ids provided and $tokenCount are required.');
+    }
+    _workingPath = '${_request.document.path}';
+
+    for (final id in _idPath) {
+      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
+    }
   }
 
   @override
-  Future<Map<String, Object>> encode([String databaseRoot = '']) async {
-    var workingPath =
-        '${databaseRoot}${_document.location.path}/${_document.location.name}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in _idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
+  Map<String, Object> write(Loose loose) {
     final updateMask = {
       'fieldPaths': _updateFields.map((e) => e.name).toList()
     };
-    final update = _document.toFirestoreFields();
-    update.addAll({'name': workingPath});
+    final name = '${loose.documentRoot}${_workingPath}';
+    final update = _request.toFirestore(_entity);
+    update.addAll({'name': name});
     final currentDocument = {'exists': true};
     final result = <String, Object>{
       'updateMask': updateMask,
@@ -169,232 +184,107 @@ class WriteUpdate<T extends DocumentResponse<S>, S, R extends DocumentFields,
   }
 }
 
-class WriteDelete<T extends DocumentResponse<S>, S, R extends DocumentFields>
-    implements Writable {
-  List<String> _idPath;
-  final Documenter<T, S, R> _document;
+class WriteDelete implements Writable {
+  final DocumentRequest _request;
+  final List<String> _idPath;
   @override
   final String label;
+  String _workingPath;
+  @override
+  String get name => _workingPath;
 
-  WriteDelete(
-    this._document, {
-    List<String> idPath = const [],
-    this.label = '',
-  }) {
-    _idPath = idPath;
+  WriteDelete(this._request, this._idPath, this.label) {
+    final tokenCount =
+        dynamicNameToken.allMatches(_request.document.path).length;
+    if (tokenCount != _idPath.length) {
+      throw LooseException(
+          '${_idPath.length} ids provided and $tokenCount are required.');
+    }
+    _workingPath = '${_request.document.path}';
+    for (final id in _idPath) {
+      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
+    }
   }
 
   @override
-  Future<Map<String, Object>> encode([String databaseRoot = '']) async {
-    var workingPath =
-        '${databaseRoot}${_document.location.path}/${_document.location.name}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in _idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-    final delete = workingPath;
+  Map<String, Object> write(Loose loose) {
+    final name = '${loose.documentRoot}${_workingPath}';
     return {
-      'delete': delete,
+      'delete': name,
     };
   }
 }
 
-class WriteTransform<T extends DocumentResponse<S>, S, R extends DocumentFields>
-    implements Writable {
-  List<String> _idPath;
-  final Documenter<T, S, R> _document;
-  final List<FieldTransform> _transforms;
+class WriteTransform implements Writable {
+  final DocumentRequest _request;
+  final List<String> _idPath;
+  final List<Transformer> _transforms;
   @override
   final String label;
-
-  WriteTransform(
-    this._document,
-    this._transforms, {
-    List<String> idPath = const [],
-    this.label = '',
-  }) {
-    if (_transforms.isEmpty) {
-      throw Exception('Field transforms cannot be empty.');
-    }
-    _idPath = idPath;
-  }
-
+  String _workingPath;
   @override
-  Future<Map<String, Object>> encode([String databaseRoot = '']) async {
-    var workingPath =
-        '${databaseRoot}${_document.location.path}/${_document.location.name}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != _idPath.length) {
+  String get name => _workingPath;
+
+  WriteTransform(this._request, this._transforms, this._idPath, this.label) {
+    final tokenCount =
+        dynamicNameToken.allMatches(_request.document.path).length;
+    if (tokenCount != _idPath.length) {
       throw LooseException(
-          '${_idPath.length} document ids were provided. $ancestorCount required in $workingPath');
+          '${_idPath.length} ids provided and $tokenCount are required.');
     }
+    var workingPath = '${_request.document.path}';
+
     for (final id in _idPath) {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
-    final result = <String, Object>{'document': workingPath};
-    result['fieldTransforms'] = _transforms.map((e) => e.transform).toList();
+  }
+
+  @override
+  Map<String, Object> write(Loose loose) {
+    final name = '${loose.documentRoot}${_workingPath}';
+    final result = <String, Object>{'document': name};
+    result['fieldTransforms'] = _transforms.map((e) => e.transform()).toList();
     return {'transform': result};
   }
 }
 
 class WriteCounter implements Writable {
-  final Shard _shard;
+  final Counter _counter;
+  final int _increment;
+  final List<String> _idPath;
   @override
   final String label;
+  String _workingPath;
+  @override
+  String get name => _workingPath;
 
-  WriteCounter(
-    this._shard, {
-    this.label = '',
-  });
+  WriteCounter(this._counter, this._increment, this._idPath, this.label) {
+    final tokenCount =
+        dynamicNameToken.allMatches(_counter.document.path).length;
+    if (tokenCount != _idPath.length) {
+      throw LooseException(
+          '${_idPath.length} ids provided and $tokenCount are required.');
+    }
+    _workingPath = '${_counter.collection}';
+
+    for (final id in _idPath) {
+      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
+    }
+  }
 
   @override
-  Future<Map<String, Object>> encode([String databaseRoot = '']) async {
+  Map<String, Object> write(Loose loose) {
+    final name = '${loose.documentRoot}${_workingPath}/${_counter.shard()}';
     return {
       'transform': {
-        'document': '${databaseRoot}${_shard.documentPath}',
+        'document': name,
         'fieldTransforms': [
           {
-            'fieldPath': '${_shard.fieldPath}',
-            'increment': {'integerValue': _shard.increment.toString()}
+            ..._counter.fieldPath,
+            'increment': {'integerValue': _increment.toString()}
           }
         ]
       }
     };
-  }
-}
-
-abstract class Write {
-  // Write._();
-  static WriteCreate<T, S, R, Q> create<T extends DocumentResponse<S>, S,
-      R extends DocumentFields, Q extends QueryField>(
-    Documenter<T, S, R> document, {
-    List<String> idPath = const [],
-    bool autoAssignId = false,
-    Loose checkIdWith,
-    List<FieldTransform> transforms = const [],
-    String label = '',
-  }) {
-    return WriteCreate(document,
-        idPath: idPath,
-        autoAssignId: autoAssignId,
-        checkIdWith: checkIdWith,
-        transforms: transforms,
-        label: label);
-  }
-
-  static WriteUpdate<T, S, R, Q> update<T extends DocumentResponse<S>, S,
-      R extends DocumentFields, Q extends QueryField>(
-    Documenter<T, S, R> document,
-    List<Q> updateFields, {
-    List<String> idPath = const [],
-    List<FieldTransform> transforms = const [],
-    String label = '',
-  }) {
-    return WriteUpdate(document, updateFields,
-        idPath: idPath, transforms: transforms, label: label);
-  }
-
-  static WriteDelete<T, S, R>
-      delete<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-          Documenter<T, S, R> document,
-          {List<String> idPath = const [],
-          String label = ''}) {
-    return WriteDelete(document, idPath: idPath, label: label);
-  }
-
-  static WriteTransform<T, S, R>
-      transform<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-          Documenter<T, S, R> document, List<FieldTransform> transforms,
-          {List<String> idPath = const [], String label = ''}) {
-    return WriteTransform(document, transforms, idPath: idPath, label: label);
-  }
-
-  static WriteCounter count(
-    Shard shard, {
-    String label = '',
-  }) =>
-      WriteCounter(shard, label: label);
-}
-
-class FieldTransform {
-  final QueryField _field;
-
-  final _transform = <String, Object>{};
-  Map<String, Object> get transform =>
-      Map.from(_transform)..addAll(_field.fieldPath);
-
-  FieldTransform(this._field);
-
-  void _checkDone() {
-    if (_transform.isNotEmpty) {
-      throw Exception('Transform has already been set.');
-    }
-  }
-
-  FieldTransform increment([int by = 1]) {
-    _checkDone();
-    if (_field is! IntegerField) {
-      throw Exception('Increment must be on an integer field.');
-    }
-    _transform['increment'] = {'integerValue': by.toString()};
-    return this;
-  }
-
-  FieldTransform decrement([int by = 1]) {
-    _checkDone();
-    if (_field is! IntegerField) {
-      throw Exception('Decrement must be on an integer field.');
-    }
-    _transform['increment'] = {'integerValue': (by * -1).toString()};
-    return this;
-  }
-
-  FieldTransform add(num number) {
-    _checkDone();
-    if (_field is! DoubleField) {
-      throw Exception('Add must be on a double field.');
-    }
-    _transform['increment'] = {'doubleValue': number};
-    return this;
-  }
-
-  FieldTransform subtract(num number) {
-    _checkDone();
-    if (_field is! DoubleField) {
-      throw Exception('Subtract must be on a double field.');
-    }
-    _transform['increment'] = {'doubleValue': (number * -1)};
-    return this;
-  }
-
-  FieldTransform maximum(num number) {
-    _checkDone();
-    if (_field is! DoubleField) {
-      throw Exception('Maximum must be on a double field.');
-    }
-    _transform['maximum'] = {'doubleValue': number};
-    return this;
-  }
-
-  FieldTransform minimum(num number) {
-    _checkDone();
-    if (_field is! DoubleField) {
-      throw Exception('Minimum must be on a double field.');
-    }
-    _transform['minimum'] = {'doubleValue': number};
-    return this;
-  }
-
-  FieldTransform serverTimestamp() {
-    _checkDone();
-    if (_field is! DateTimeField) {
-      throw Exception('Server timestamp must be on a timestamp field.');
-    }
-    _transform['setToServerValue'] = 'REQUEST_TIME';
-    return this;
   }
 }

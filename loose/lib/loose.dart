@@ -1,11 +1,13 @@
 export 'src/loose.dart' show Loose;
 export 'src/loose_credentials.dart';
 export 'src/case.dart';
-// export 'src/query/query.dart';
-// export 'src/query/query_enums.dart';
-// export 'src/query/filter.dart';
-// export 'src/query/order.dart';
+export 'src/query/query.dart';
+export 'src/query/query_enums.dart';
+export 'src/query/filter.dart';
+export 'src/query/order.dart';
 export 'src/reference.dart';
-// export 'src/write.dart';
+export 'src/write.dart' show Write;
+export 'src/transformer.dart' show Transformer;
 export 'src/counter.dart';
+export 'src/batch_get_request.dart' show BatchGetRequest;
 // export 'src/update_mask.dart';

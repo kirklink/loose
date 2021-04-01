@@ -79,12 +79,16 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     final suppressWarnings =
         annotation.peek('suppressWarning')?.boolValue ?? false;
 
-    var name = annotation.peek('document').peek('name').stringValue;
+    print('getting name');
+    var name = annotation.peek('document')?.peek('name')?.stringValue;
+    print('getting parent');
     var parent = annotation.peek('document').peek('parent');
-    var collection = parent.peek('name').stringValue;
+    print('getting collection');
+    var collection = parent?.peek('name')?.stringValue;
 
     final path = <String>[];
 
+    print('getting parent again');
     parent = parent.peek('parent');
 
     while (parent != null) {
@@ -113,8 +117,8 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
         'final _\$${className}Fields fields = _\$${className}Fields();');
     classBuf.writeln('@override');
     classBuf.writeln(
-        'DocumentResponse<$className> fromFirestore(Map<String, Object> m) {');
-    classBuf.writeln("final f = m['fields'] as Map<String, Object>;");
+        'DocumentResponse<$className> fromFirestore(Map<String, Object> map) {');
+    classBuf.writeln("final m = map['fields'] as Map<String, Object>;");
 
     // fromFields
     classBuf.writeln(
@@ -122,12 +126,12 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
 
     if (usesIdentifier(element)) {
       classBuf.write(
-          "..$documentIdFieldName = (m['name'] as String).split('/').last");
+          "..$documentIdFieldName = (map['name'] as String).split('/').last");
     }
     classBuf.writeln(';');
 
     // !fromFields
-    classBuf.writeln(('return DocumentResponse(e, m);}'));
+    classBuf.writeln(('return DocumentResponse(e, map);}'));
     classBuf.writeln('@override');
     classBuf.writeln('Map<String, Object> toFirestore($className e) {');
     classBuf.write("return {'fields': ");

@@ -2,7 +2,7 @@ import 'dart:convert' show json;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 
 import './loose_credentials.dart';
-// import 'documenter.dart';
+
 import 'document.dart';
 import 'document_response.dart';
 import 'document_request.dart';
@@ -10,16 +10,16 @@ import 'loose_response.dart';
 import 'reference.dart';
 import 'firestore_database.dart';
 import 'constants.dart';
-// import 'write.dart';
-// import 'write_results.dart';
-// import 'commit_result.dart';
-// import 'batch_get_request.dart';
-// import 'batch_get_result.dart';
-// import 'list_result.dart';
+import 'write_results.dart';
+import 'list_result.dart';
+import 'commit_result.dart';
 import 'loose_exception.dart';
-// import 'counter.dart';
-// import 'query/query.dart';
-// import 'query/query_field.dart';
+import 'write.dart';
+import 'counter.dart';
+import 'query/query.dart';
+import 'query/query_field.dart';
+import 'batch_get_request.dart';
+import 'batch_get_result.dart';
 
 abstract class LooseErrors {
   static LooseError documentExists(String serverMessage) =>
@@ -30,89 +30,111 @@ abstract class LooseErrors {
       LooseError(500, 'Call to Firestore failed.', serverMessage);
 }
 
-// class Transaction {
-//   final String id;
-//   final Loose _loose;
-//   bool complete = false;
+class _TransactionDocumentHandler<T, Q extends QueryField> {
+  final DocumentRequest<T> _request;
+  final Transaction _transaction;
+  const _TransactionDocumentHandler(this._transaction, this._request);
 
-//   Transaction._(this._loose, this.id);
+  Future<LooseEntityResponse<T>> read(
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
+    return _transaction._read(_request, idPath: idPath);
+  }
 
-//   static Future<Transaction> newTransaction(Loose loose) async {
-//     final id = await loose._beginTransaction();
-//     return Transaction._(loose, id);
-//   }
+  Future<bool> exists(
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
+    return _transaction._exists(_request, idPath: idPath);
+  }
+}
 
-//   void _checkComplete() {
-//     if (complete) {
-//       throw LooseException(
-//           'The transaction with id "$id" is already complete.');
-//     }
-//   }
+class Transaction {
+  final String id;
+  final Loose _loose;
+  bool complete = false;
 
-//   Future<LooseEntityResponse> read<DocumentRequest>(
-//     DocumentRequest request, {
-//     List<String> idPath = const [],
-//   }) async {
-//     _checkComplete();
-//     return _loose._readImpl(request,
-//         idPath: idPath, keepClientOpen: true, transactionId: id);
-//   }
+  Transaction._(this._loose, this.id);
 
-//   Future<bool> exists(Documenter document,
-//       {List<String> idPath = const []}) async {
-//     _checkComplete();
-//     final res = await _loose._readImpl(document,
-//         idPath: idPath,
-//         ignoreContent: true,
-//         keepClientOpen: true,
-//         transactionId: id);
-//     if (!res.ok || res.error.isNotFound) {
-//       return false;
-//     } else {
-//       return true;
-//     }
-//   }
+  static Future<Transaction> newTransaction(Loose loose) async {
+    final id = await loose._beginTransaction();
+    return Transaction._(loose, id);
+  }
 
-//   Future<ListResults<T, S>>
-//       list<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Documenter<T, S, R> document,
-//           {int pageSize = 20,
-//           String nextPageToken = ''}) async {
-//     return _loose._listImpl(document,
-//         keepClientOpen: true, pageSize: pageSize, nextPageToken: nextPageToken);
-//   }
+  void _checkComplete() {
+    if (complete) {
+      throw LooseException(
+          'The transaction with id "$id" is already complete.');
+    }
+  }
 
-//   Future<LooseListResponse<T, S>>
-//       query<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Query<T, S, R> query) async {
-//     _checkComplete();
-//     return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
-//   }
+  _TransactionDocumentHandler<T, Q> document<T, Q extends QueryField>(
+      DocumentRequest<T> request) {
+    return _TransactionDocumentHandler(this, request);
+  }
 
-//   Future<CommitResult> commit(
-//       {List<Writable> writes = const [], bool keepClientOpen = false}) async {
-//     _checkComplete();
-//     return _loose._commitTransaction(
-//         writes: writes, transactionId: id, keepClientOpen: keepClientOpen);
-//   }
+  Future<LooseEntityResponse<T>> _read<T>(
+    DocumentRequest<T> request, {
+    List<String> idPath = const [],
+  }) async {
+    _checkComplete();
+    return _loose._readImpl(request,
+        idPath: idPath, keepClientOpen: true, transactionId: id);
+  }
 
-//   Future<bool> rollback() async {
-//     return _loose._rollbackTransaction(id);
-//   }
+  Future<bool> _exists<T>(DocumentRequest<T> request,
+      {List<String> idPath = const []}) async {
+    _checkComplete();
+    final res = await _loose._readImpl(request,
+        idPath: idPath,
+        ignoreContent: true,
+        keepClientOpen: true,
+        transactionId: id);
+    if (res.ok) {
+      return true;
+    } else if (res.error.isNotFound) {
+      return false;
+    } else {
+      return null;
+    }
+  }
 
-//   Future<int> readCounter(Counter counter) async {
-//     _checkComplete();
-//     return _loose._readCounterImpl(counter, transactionId: id);
-//   }
-// }
+  // Future<ListResults<T, S>>
+  //     list<T extends DocumentResponse<S>, S, R extends DocumentFields>(
+  //         Documenter<T, S, R> document,
+  //         {int pageSize = 20,
+  //         String nextPageToken = ''}) async {
+  //   return _loose._listImpl(document,
+  //       keepClientOpen: true, pageSize: pageSize, nextPageToken: nextPageToken);
+  // }
+
+  // Future<LooseListResponse<T, S>>
+  //     query<T extends DocumentResponse<S>, S, R extends DocumentFields>(
+  //         Query<T, S, R> query) async {
+  //   _checkComplete();
+  //   return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
+  // }
+
+  Future<CommitResult> commit(
+      {List<Writable> writes = const [], bool keepClientOpen = false}) async {
+    _checkComplete();
+    return _loose._commitTransaction(
+        writes: writes, transactionId: id, keepClientOpen: keepClientOpen);
+  }
+
+  Future<bool> rollback() async {
+    return _loose._rollbackTransaction(id);
+  }
+
+  TransactionCountHandler counter(Counter counter,
+      {List<String> idPath = const []}) {
+    _checkComplete();
+    return TransactionCountHandler(_loose, counter, idPath, id);
+  }
+}
 
 class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
   LooseCredentials _creds;
   auth.AutoRefreshingAuthClient _client;
-  // FirestoreDatabase _database;
-  // var _transactionId = '';
 
   String get documentRoot => _database.documentRoot;
   String get databaseRoot => _database.rootPath;
@@ -168,17 +190,28 @@ class Loose {
     }
   }
 
-  // Future<Transaction> transaction() async {
-  //   return Transaction.newTransaction(this);
-  // }
+  Future<Transaction> transaction() async {
+    return Transaction.newTransaction(this);
+  }
+
+  DocumentHandler<T, Q> document<T, Q extends QueryField>(
+      DocumentRequest<T> request) {
+    return DocumentHandler(this, request);
+  }
+
+  CountHandler counter(Counter counter, {List<String> idPath = const []}) {
+    return CountHandler(this, counter, idPath);
+  }
 
   // CREATE
-  Future<LooseEntityResponse<T>> create<T>(DocumentRequest<T> loose, T entity,
+  Future<LooseEntityResponse<T>> _create<T>(
+      DocumentRequest<T> request, T entity,
       {List<String> idPath = const [],
       bool autoAssignId = false,
       bool printFields = false,
       bool keepClientOpen = false}) async {
-    final tokenCount = dynamicNameToken.allMatches(loose.document.path).length;
+    final tokenCount =
+        dynamicNameToken.allMatches(request.document.path).length;
     var idCount = autoAssignId ? idPath.length + 1 : idPath.length;
 
     if (tokenCount != idCount) {
@@ -186,10 +219,10 @@ class Loose {
           '$idCount ids provided and $tokenCount are required.');
     }
 
-    var workingPath = loose.document.path;
+    var workingPath = request.document.path;
     var docId = '';
     if (workingPath.endsWith(dynamicNameToken) && !autoAssignId) {
-      docId == idPath.removeLast();
+      docId = idPath.removeLast();
     }
 
     for (final id in idPath) {
@@ -198,26 +231,21 @@ class Loose {
 
     if (autoAssignId) {
       workingPath = workingPath.replaceFirst('/' + dynamicNameToken, '');
+    } else {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, '');
     }
-
-    print(docId);
-    print(workingPath);
 
     _client ??= await _createClient();
 
     final queryParameters = <String, String>{};
-    // if (_transactionId.isNotEmpty) {
-    //   queryParameters.addAll({'transaction': _transactionId});
-    // }
     if (docId.isNotEmpty) {
       queryParameters.addAll({'documentId': docId});
     }
 
-    print('${_database.rootPath}${workingPath}');
     final uri = Uri.https(
         authority, '${_database.rootPath}${workingPath}', queryParameters);
 
-    final reqBody = loose.toFirestore(entity);
+    final reqBody = request.toFirestore(entity);
     if (printFields) {
       print(json.encode(reqBody));
     }
@@ -233,7 +261,7 @@ class Loose {
 
     final resBody = json.decode(res.body) as Map<String, Object>;
 
-    final response = loose.fromFirestore(resBody);
+    final response = request.fromFirestore(resBody);
     return LooseEntityResponse(response);
   }
 
@@ -283,7 +311,7 @@ class Loose {
     }
   }
 
-  Future<LooseEntityResponse<T>> read<T>(DocumentRequest<T> request,
+  Future<LooseEntityResponse<T>> _read<T>(DocumentRequest<T> request,
       {List<String> idPath = const [], bool keepClientOpen = false}) async {
     return _readImpl(request,
         idPath: idPath, keepClientOpen: keepClientOpen, ignoreContent: false);
@@ -293,191 +321,183 @@ class Loose {
       {List<String> idPath = const [], bool keepClientOpen = false}) async {
     final res = await _readImpl(request,
         idPath: idPath, ignoreContent: true, keepClientOpen: keepClientOpen);
-    if (!res.ok || res.error.isNotFound) {
+    if (res.ok) {
+      return true;
+    } else if (res.error.isNotFound) {
       return false;
     } else {
-      return true;
+      return null;
     }
   }
 
-//   // UPDATE
-//   Future<LooseEntityResponse<T, S>> update<T extends DocumentResponse<S>, S,
-//           R extends DocumentFields, Q extends QueryField>(
-//       Documenter<T, S, R> document, List<Q> updateFields,
-//       {List<String> idPath = const [],
-//       bool printFields = false,
-//       bool keepClientOpen = false}) async {
-//     var workingPath = '${document.location.path}/${document.location.name}';
-//     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-//     if (ancestorCount != idPath.length) {
-//       throw LooseException(
-//           '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-//     }
-//     for (final id in idPath) {
-//       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-//     }
+  // UPDATE
+  Future<LooseEntityResponse<T>> _update<T, Q extends QueryField>(
+      DocumentRequest<T> request, T entity, List<Q> updateFields,
+      {List<String> idPath = const [],
+      bool printFields = false,
+      bool keepClientOpen = false}) async {
+    var workingPath = '${request.document.path}';
+    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
+    if (ancestorCount != idPath.length) {
+      throw LooseException(
+          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
+    }
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
+    }
 
-//     _client ??= await _createClient();
+    _client ??= await _createClient();
 
-//     var params = <String, dynamic>{
-//       'currentDocument.exists': 'true',
-//       'updateMask.fieldPaths':
-//           updateFields.map((e) => e.name).toList(growable: false)
-//     };
+    final params = <String, dynamic>{};
+    params['updateMask.fieldPaths'] =
+        updateFields.map((e) => e.name).toList(growable: false);
+    params['currentDocument.exists'] = 'true';
 
-//     final uri = Uri(
-//         scheme: 'https',
-//         host: authority,
-//         path: '${_database.rootPath}${workingPath}',
-//         queryParameters: params);
-//     final reqBody = document.toFirestoreFields();
+    final uri = Uri(
+        scheme: 'https',
+        host: authority,
+        path: '${_database.rootPath}${workingPath}',
+        queryParameters: params);
+    final reqBody = request.toFirestore(entity);
 
-//     if (printFields) {
-//       print(json.encode(reqBody));
-//     }
-//     final res = await _client.patch(uri, body: json.encode(reqBody));
+    if (printFields) {
+      print(json.encode(reqBody));
+    }
+    final res = await _client.patch(uri, body: json.encode(reqBody));
 
-//     if (!keepClientOpen) {
-//       done();
-//     }
+    if (!keepClientOpen) {
+      done();
+    }
 
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
-//     }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return _singleEntityResponseFails<T>(res.statusCode, res.body);
+    }
 
-//     final resBody = json.decode(res.body);
-//     final shell = document.fromFirestore(
-//         resBody['fields'] as Map<String, Object>,
-//         resBody['name'] as String,
-//         resBody['createTime'] as String,
-//         resBody['updateTime'] as String);
-//     return LooseEntityResponse(shell);
+    final resBody = json.decode(res.body) as Map<String, Object>;
+    final response = request.fromFirestore(resBody);
+    return LooseEntityResponse(response);
+  }
+
+  // DELETE
+  Future<LooseEntityResponse<T>> _delete<T>(DocumentRequest<T> loose,
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
+    final tokenCount = dynamicNameToken.allMatches(loose.document.path).length;
+    final idCount = idPath.length;
+
+    if (tokenCount != idCount) {
+      throw LooseException(
+          '$idCount ids provided and $tokenCount are required.');
+    }
+
+    var workingPath = loose.document.path;
+
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
+    }
+
+    _client ??= await _createClient();
+
+    final queryParameters = <String, String>{};
+
+    final uri = Uri.https(
+        authority, '${_database.rootPath}${workingPath}', queryParameters);
+    final res = await _client.delete(uri);
+    if (!keepClientOpen) {
+      done();
+    }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      return _singleEntityResponseFails<T>(res.statusCode, res.body);
+    }
+    return LooseEntityResponse(DocumentResponse.empty<T>());
+  }
+
+  // QUERY
+  Future<LooseListResponse<T>> _queryImpl<T>(Query<T> query,
+      {bool keepClientOpen = false, String transactionId = ''}) async {
+    final rawBody = query.encode();
+
+    _client ??= await _createClient();
+
+    if (transactionId.isNotEmpty) {
+      rawBody['transaction'] = transactionId;
+    }
+
+    final reqBody = json.encode(rawBody);
+
+    final path = query.request.document.parent?.parent?.path ?? '';
+
+    final uri = Uri.https(authority, '${_database.rootPath}${path}:runQuery');
+
+    final res = await _client.post(uri, body: reqBody);
+
+    if (!keepClientOpen) {
+      done();
+    }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      if (res.statusCode == 400) {
+        final resBody = json.decode(res.body) as List<Object>;
+        for (final errorObject in resBody) {
+          final error = (errorObject as Map<String, Object>)['error']
+              as Map<String, Object>;
+          if ((error['status'] as String) == 'FAILED_PRECONDITION') {
+            throw LooseException(
+                'SERVER ERROR [${error['status'] as String}]: ${(error['message'] as String)}');
+          } else if ((error['status'] as String) == 'INVALID_ARGUMENT') {
+            throw LooseException(
+                'SERVER ERROR [${error['status'] as String}]: ${(error['message'] as String)}');
+          }
+        }
+      }
+      return LooseListResponse.fail(LooseErrors.apiCallFailed(res.body));
+    }
+
+//     [{
+//   "error": {
+//     "code": 400,
+//     "message": "The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/dilawri-portal-dev/firestore/indexes?create_composite=Ck9wcm9qZWN0cy9kaWxhd3JpLXBvcnRhbC1kZXYvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3ZkcHMvaW5kZXhlcy9fEAEaEQoNZGVhbGVyc2hpcFJlZhABGg8KC3N0b2NrTnVtYmVyEAEaCwoHdmVyc2lvbhACGgwKCF9fbmFtZV9fEAI",
+//     "status": "FAILED_PRECONDITION"
 //   }
+// }
+// ]
 
-//   // DELETE
-//   Future<LooseEntityResponse<T, S>>
-//       delete<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Documenter<T, S, R> document,
-//           {List<String> idPath = const [],
-//           bool keepClientOpen = false}) async {
-//     var workingPath = '${document.location.path}/${document.location.name}';
-//     final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-//     if (ancestorCount != idPath.length) {
-//       throw LooseException(
-//           '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-//     }
-//     for (final id in idPath) {
-//       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-//     }
-
-//     _client ??= await _createClient();
-
-//     final queryParameters = <String, String>{};
-//     // if (_transactionId.isNotEmpty) {
-//     //   queryParameters.addAll({'transaction': _transactionId});
-//     // }
-//     final uri = Uri.https(
-//         authority, '${_database.rootPath}${workingPath}', queryParameters);
-//     final res = await _client.post(uri);
-//     if (!keepClientOpen) {
-//       done();
-//     }
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       return _singleEntityResponseFails<T, S>(res.statusCode, res.body);
-//     }
-//     return LooseEntityResponse(DocumentResponse.empty as T);
+// [{
+//   "error": {
+//     "code": 400,
+//     "message": "inequality filter property and first sort order must be the same: integer and nested.innerString",
+//     "status": "INVALID_ARGUMENT"
 //   }
+// }
+// ]
 
-//   // QUERY
-//   Future<LooseListResponse<T, S>>
-//       _queryImpl<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Query<T, S, R> query,
-//           {bool keepClientOpen = false,
-//           String transactionId = ''}) async {
-//     final rawBody = query.encode();
-//     final reqBody = json.encode(rawBody);
-
-//     _client ??= await _createClient();
-
-//     final queryParameters = <String, String>{};
-//     if (transactionId.isNotEmpty) {
-//       queryParameters.addAll({'transaction': transactionId});
-//     }
-
-//     final uri = Uri.https(
-//         authority,
-//         '${_database.rootPath}${query.document.location.pathToCollection}:runQuery',
-//         queryParameters);
-
-//     final res = await _client.post(uri, body: reqBody);
-//     if (!keepClientOpen) {
-//       done();
-//     }
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       if (res.statusCode == 400) {
-//         final resBody = json.decode(res.body) as List<Object>;
-//         for (final errorObject in resBody) {
-//           final error = (errorObject as Map<String, Object>)['error']
-//               as Map<String, Object>;
-//           if ((error['status'] as String) == 'FAILED_PRECONDITION') {
-//             throw LooseException((error['message'] as String));
-//           } else if ((error['status'] as String) == 'INVALID_ARGUMENT') {
-//             throw LooseException((error['message'] as String));
-//           }
-//         }
-//       }
-//       return LooseListResponse.fail(LooseErrors.apiCallFailed(res.body));
-//     }
-
-// //     [{
-// //   "error": {
-// //     "code": 400,
-// //     "message": "The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/dilawri-portal-dev/firestore/indexes?create_composite=Ck9wcm9qZWN0cy9kaWxhd3JpLXBvcnRhbC1kZXYvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3ZkcHMvaW5kZXhlcy9fEAEaEQoNZGVhbGVyc2hpcFJlZhABGg8KC3N0b2NrTnVtYmVyEAEaCwoHdmVyc2lvbhACGgwKCF9fbmFtZV9fEAI",
-// //     "status": "FAILED_PRECONDITION"
-// //   }
-// // }
-// // ]
-
-// // [{
-// //   "error": {
-// //     "code": 400,
-// //     "message": "inequality filter property and first sort order must be the same: integer and nested.innerString",
-// //     "status": "INVALID_ARGUMENT"
-// //   }
-// // }
-// // ]
-
-// // [{
-// //   "error": {
-// //     "code": 400,
-// //     "message": "order by clause cannot contain a field with an equality filter nested.innerString",
-// //     "status": "INVALID_ARGUMENT"
-// //   }
-// // }
-
-//     final decoded = json.decode(res.body);
-
-//     // If no object contains 'document', no documents were returned
-//     if (!((decoded as List)[0] as Map).containsKey('document')) {
-//       return LooseListResponse(const []);
-//     }
-//     return LooseListResponse((decoded as List).map((e) {
-//       final doc = (e as Map)['document'] as Map;
-
-//       return query.document.fromFirestore(
-//           doc['fields'] as Map<String, Object>,
-//           doc['name'] as String,
-//           doc['createTime'] as String,
-//           doc['updateTime'] as String);
-//     }).toList());
+// [{
+//   "error": {
+//     "code": 400,
+//     "message": "order by clause cannot contain a field with an equality filter nested.innerString",
+//     "status": "INVALID_ARGUMENT"
 //   }
+// }
 
-//   Future<LooseListResponse<T, S>>
-//       query<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Query<T, S, R> query,
-//           {bool keepClientOpen = false}) async {
-//     return _queryImpl(query, keepClientOpen: keepClientOpen);
-//   }
+    final decoded = json.decode(res.body);
+
+    // If no object contains 'document', no documents were returned
+    if (!((decoded as List)[0] as Map).containsKey('document')) {
+      return LooseListResponse(const []);
+    }
+
+    final docs = <DocumentResponse<T>>[];
+
+    (decoded as List).forEach((e) {
+      final doc = (e as Map<String, Object>)['document'] as Map<String, Object>;
+      docs.add(query.request.fromFirestore(doc));
+    });
+
+    return LooseListResponse(docs);
+  }
+
+  Future<LooseListResponse<T>> query<T>(Query<T> query,
+      {bool keepClientOpen = false}) async {
+    return _queryImpl(query, keepClientOpen: keepClientOpen);
+  }
 
   LooseEntityResponse<T> _singleEntityResponseFails<T>(
       int statusCode, String serverResponse) {
@@ -496,292 +516,394 @@ class Loose {
   }
 
 //   // TRANSACTIONS
-//   Future<String> _beginTransaction() async {
-//     _client ??= await _createClient();
-//     final uri = Uri.https(authority, '${_database.rootPath}:beginTransaction');
-//     final res = await _client.post(uri);
+  Future<String> _beginTransaction() async {
+    _client ??= await _createClient();
+    final uri = Uri.https(authority, '${_database.rootPath}:beginTransaction');
+    final res = await _client.post(uri);
 
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       return '';
-//     }
-//     final id =
-//         (json.decode(res.body) as Map<String, Object>)['transaction'] as String;
-//     return id;
-//   }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      return '';
+    }
+    final id =
+        (json.decode(res.body) as Map<String, Object>)['transaction'] as String;
+    return id;
+  }
 
-//   Future<CommitResult> _commitTransaction(
-//       {List<Writable> writes = const [],
-//       String transactionId = '',
-//       bool keepClientOpen = false}) async {
-//     _client ??= await _createClient();
-//     final body = {
-//       'transaction': transactionId,
-//       'writes': await Future.wait(writes
-//           .map((e) async => (await e.encode(_database.documentRoot)))
-//           .toList())
-//     };
-//     final uri = Uri.https(authority, '${_database.rootPath}:commit');
-//     final res = await _client.post(uri, body: json.encode(body));
-//     if (!keepClientOpen) {
-//       done();
-//     }
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       print(res.statusCode);
-//       print(res.body);
-//       return CommitResult(WriteResults.empty, '');
-//     }
-//     final resBody = json.decode(res.body) as Map<String, Object>;
-//     return CommitResult(
-//         WriteResults(writes, resBody), resBody['commitTime'] as String);
-//   }
+  Future<CommitResult> _commitTransaction(
+      {List<Writable> writes = const [],
+      String transactionId = '',
+      bool keepClientOpen = false}) async {
+    if (writes.length > 500) {
+      throw LooseException('Only 500 writes allowed per request.');
+    }
+    _client ??= await _createClient();
+    final body = {
+      'transaction': transactionId,
+      'writes': writes.map((e) => e.write(this)).toList()
+    };
+    final uri = Uri.https(authority, '${_database.rootPath}:commit');
+    final res = await _client.post(uri, body: json.encode(body));
+    if (!keepClientOpen) {
+      done();
+    }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      print(res.statusCode);
+      print(res.body);
+      return CommitResult(WriteResults.empty, '');
+    }
+    final resBody = json.decode(res.body) as Map<String, Object>;
+    return CommitResult(
+        WriteResults(writes, resBody), resBody['commitTime'] as String);
+  }
 
-//   Future<bool> _rollbackTransaction(String transactionId) async {
-//     _client ??= await _createClient();
-//     final body = json.encode({'transaction': transactionId});
-//     final uri = Uri.https(authority, '${_database.rootPath}:rollback');
-//     final res = await _client.post(uri, body: body);
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       print(res.statusCode);
-//       print(res.body);
-//       return false;
-//     }
-//     return true;
-//   }
+  Future<bool> _rollbackTransaction(String transactionId) async {
+    _client ??= await _createClient();
+    final body = json.encode({'transaction': transactionId});
+    final uri = Uri.https(authority, '${_database.rootPath}:rollback');
+    final res = await _client.post(uri, body: body);
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      print(res.statusCode);
+      print(res.body);
+      return false;
+    }
+    return true;
+  }
 
-//   // BATCH WRITE
-//   Future<WriteResults> batchWrite(List<Writable> writes,
-//       {bool keepClientOpen = false}) async {
-//     _client ??= await _createClient();
-//     final body = {
-//       'writes': await Future.wait(writes
-//           .map((e) async => (await e.encode(_database.documentRoot)))
-//           .toList())
-//     };
-//     final uri = Uri.https(authority, '${_database.rootPath}:batchWrite');
-//     final res = await _client.post(uri, body: json.encode(body));
-//     if (!keepClientOpen) {
-//       done();
-//     }
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       return WriteResults.empty;
-//     }
-//     final resBody = json.decode(res.body) as Map<String, Object>;
-//     return WriteResults(writes, resBody);
-//   }
+  // BATCH WRITE
+  Future<WriteResults> batchWrite(List<Writable> writes,
+      {bool keepClientOpen = false}) async {
+    _client ??= await _createClient();
+    final docNames = <String>[];
+    final body = {
+      'writes': writes.map((e) {
+        if (docNames.contains(e.name)) {
+          throw LooseException(
+              'The same document cannot be written more than once in a single request.');
+        }
+        docNames.add(e.name);
+        return e.write(this);
+      }).toList()
+    };
+    // print(body);
+    final uri = Uri.https(authority, '${_database.rootPath}:batchWrite');
+    final res = await _client.post(uri, body: json.encode(body));
+    if (!keepClientOpen) {
+      done();
+    }
+    // print(res.statusCode);
+    // print(res.body);
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      return WriteResults.empty;
+    }
+    final resBody = json.decode(res.body) as Map<String, Object>;
+    return WriteResults(writes, resBody);
+  }
 
-//   // BATCH GET
-//   Future<BatchGetResults<T, S>>
-//       _batchGetImpl<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           BatchGetRequest<T, S, R> documents,
-//           {bool keepClientOpen = false,
-//           String transactionId = ''}) async {
-//     final documentPaths = <String>[];
-//     for (final idPath in documents.idPaths) {
-//       var workingPath =
-//           '${documents.document.location.path}/${documents.document.location.name}';
+  // BATCH GET
+  Future<BatchGetResults> batchGet<T>(BatchGetRequest<T> batchGetRequest,
+      {bool keepClientOpen = false, String transactionId = ''}) async {
+    final docs = <String, DocumentRequest<T>>{};
 
-//       final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-//       if (ancestorCount != idPath.length) {
-//         throw LooseException(
-//             '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-//       }
-//       for (final id in idPath) {
-//         workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-//       }
-//       documentPaths.add('${_database.documentRoot}${workingPath}');
-//     }
+    batchGetRequest.documents.keys.forEach((key) {
+      docs['${_database.documentRoot}${key}'] = batchGetRequest.documents[key];
+    });
 
-//     final decoded = await _batchGetFromPaths(documentPaths,
-//         transactionId: transactionId, keepClientOpen: keepClientOpen);
+    docs.keys.forEach((k) {
+      print('$k: ${docs[k]}');
+    });
 
-//     var found = <T>[];
-//     var missing = <String>[];
+    final decoded = await _batchGetFromPaths(docs.keys.toList(),
+        transactionId: transactionId, keepClientOpen: keepClientOpen);
 
-//     decoded.forEach((e) {
-//       if ((e as Map<String, Object>).containsKey('found')) {
-//         final doc = (e as Map<String, Object>)['found'] as Map;
-//         found.add(documents.document.fromFirestore(
-//             doc['fields'] as Map<String, Object>,
-//             doc['name'] as String,
-//             doc['createTime'] as String,
-//             doc['updateTime'] as String));
-//       } else if ((e as Map<String, Object>).containsKey('missing')) {
-//         missing.add((e as Map<String, Object>)['missing'] as String);
-//       }
-//     });
+    print(decoded);
 
-//     return BatchGetResults(LooseListResponse(found), missing);
-//   }
+    var found = <DocumentResponse<T>>[];
+    var missing = <String>[];
 
-//   // BATCH GET FROM PATHS
-//   Future<List> _batchGetFromPaths(List<String> documentPaths,
-//       {String transactionId = '',
-//       bool keepClientOpen = false,
-//       bool ownTransaction = false}) async {
-//     final body = <String, Object>{'documents': documentPaths};
+    decoded.forEach((e) {
+      if ((e as Map<String, Object>).containsKey('found')) {
+        final doc = (e as Map<String, Object>)['found'] as Map<String, Object>;
+        final name = doc['name'] as String;
+        final request = docs[name];
+        found.add(request.fromFirestore(doc));
+      } else if ((e as Map<String, Object>).containsKey('missing')) {
+        missing.add((e as Map<String, Object>)['missing'] as String);
+      }
+    });
 
-//     var ownTransactionId = '';
-//     if (transactionId.isNotEmpty) {
-//       body['transaction'] = transactionId;
-//     } else if (ownTransaction) {
-//       ownTransactionId = await _beginTransaction();
-//       body['transaction'] = ownTransactionId;
-//     }
+    return BatchGetResults(LooseListResponse(found), missing);
+  }
 
-//     _client ??= await _createClient();
+  // BATCH GET FROM PATHS
+  Future<List> _batchGetFromPaths(List<String> documentPaths,
+      {String transactionId = '',
+      bool keepClientOpen = false,
+      bool ownTransaction = false}) async {
+    final body = <String, Object>{'documents': documentPaths};
 
-//     final uri = Uri.https(authority, '${_database.rootPath}:batchGet');
+    var ownTransactionId = '';
+    if (transactionId.isNotEmpty) {
+      body['transaction'] = transactionId;
+    } else if (ownTransaction) {
+      ownTransactionId = await _beginTransaction();
+      body['transaction'] = ownTransactionId;
+    }
 
-//     final res = await _client.post(uri, body: json.encode(body));
+    _client ??= await _createClient();
 
-//     if (ownTransactionId.isNotEmpty) {
-//       final commit = await _commitTransaction(
-//           transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
-//       if (!commit.ok) {
-//         // TODO: Handle batchGet own transaction commit failure
-//       }
-//     }
+    final uri = Uri.https(authority, '${_database.rootPath}:batchGet');
 
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       print('batchGet fail');
-//       print(res.statusCode);
-//       print(res.body);
-//     }
-//     return json.decode(res.body) as List;
-//   }
+    final res = await _client.post(uri, body: json.encode(body));
 
-//   // READ COUNTER
-//   Future<int> _readCounterImpl(Counter counter,
-//       {String transactionId = '', bool keepClientOpen = false}) async {
-//     final shards = await _listFromPath(counter.location,
-//         pageSize: 1000,
-//         keepClientOpen: keepClientOpen,
-//         transactionId: transactionId,
-//         ownTransaction: transactionId.isEmpty);
+    if (ownTransactionId.isNotEmpty) {
+      final commit = await _commitTransaction(
+          transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
+      if (!commit.ok) {
+        // TODO: Handle batchGet own transaction commit failure
+      }
+    }
 
-//     var result = 0;
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      print('batchGet fail');
+      print(res.statusCode);
+      print(res.body);
+    }
+    return json.decode(res.body) as List;
+  }
 
-//     ((shards as Map<String, Object>)['documents'] as List).forEach((e) {
-//       final fields = (e as Map<String, Object>)['fields'];
-//       final field = (fields as Map<String, Object>)[counter.fieldPath];
-//       final value = int.tryParse(
-//           (field as Map<String, Object>)['integerValue'] as String);
-//       if (value == null) {
-//         return null;
-//       } else {
-//         result = result + value;
-//       }
-//     });
-//     return result;
-//   }
+  // READ COUNTER
+  Future<int> _readCounterImpl(Counter counter,
+      {List<String> idPath = const [],
+      String transactionId = '',
+      bool keepClientOpen = false}) async {
+    var nextPageToken = '';
+    var result = 0;
+    do {
+      final shards = await _listFromPath(counter.collection,
+          idPath: idPath,
+          pageSize: 10,
+          keepClientOpen: keepClientOpen,
+          transactionId: transactionId,
+          ownTransaction: transactionId.isEmpty,
+          nextPageToken: nextPageToken);
 
-//   Future<int> readCounter(Counter counter,
-//       {bool keepClientOpen = false}) async {
-//     return _readCounterImpl(counter, keepClientOpen: keepClientOpen);
-//   }
+      ((shards as Map<String, Object>)['documents'] as List).forEach((e) {
+        final fields = (e as Map<String, Object>)['fields'];
+        final field = (fields as Map<String, Object>)[counter.counterField];
+        final value = int.tryParse(
+            (field as Map<String, Object>)['integerValue'] as String);
+        if (value == null) {
+          return null;
+        } else {
+          result += value;
+        }
+      });
+      nextPageToken =
+          (shards as Map<String, Object>)['nextPageToken'] as String ?? '';
+    } while (nextPageToken.isNotEmpty);
 
-//   // WRITE COUNTER
-//   Future writeCounter(Shard shard, {bool keepClientOpen = false}) async {
-//     final write = Write.count(shard);
+    return result;
+  }
 
-//     await batchWrite([write], keepClientOpen: keepClientOpen);
-//   }
+  // LIST GET
+  Future<ListResults<T>> _listImpl<T>(DocumentRequest<T> request,
+      {List<String> idPath = const [],
+      int pageSize = 20,
+      String nextPageToken = '',
+      bool keepClientOpen = false,
+      String transactionId = ''}) async {
+    final decoded = await _listFromPath('${request.document.parent.path}',
+        idPath: idPath,
+        pageSize: pageSize,
+        nextPageToken: nextPageToken,
+        transactionId: transactionId,
+        keepClientOpen: keepClientOpen);
 
-//   // LIST GET
-//   Future<ListResults<T, S>>
-//       _listImpl<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Documenter<T, S, R> document,
-//           {int pageSize = 0,
-//           String nextPageToken = '',
-//           bool keepClientOpen = false,
-//           String transactionId = ''}) async {
-//     var workingPath =
-//         '${document.location.pathToCollection}${document.location.collection}';
+    final docs = <DocumentResponse<T>>[];
+    var resultNextPageToken = '';
 
-//     final decoded = await _listFromPath(workingPath,
-//         pageSize: pageSize,
-//         nextPageToken: nextPageToken,
-//         transactionId: transactionId,
-//         keepClientOpen: keepClientOpen);
+    ((decoded as Map<String, Object>)['documents'] as List).forEach((e) {
+      final doc = e as Map<String, Object>;
+      docs.add(request.fromFirestore(doc));
+    });
+    resultNextPageToken =
+        ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
 
-//     var docs = <T>[];
-//     var resultNextPageToken = '';
+    return ListResults(LooseListResponse(docs), resultNextPageToken);
+  }
 
-//     ((decoded as Map<String, Object>)['documents'] as List).forEach((e) {
-//       final doc = e as Map<String, Object>;
-//       docs.add(document.fromFirestore(
-//           doc['fields'] as Map<String, Object>,
-//           doc['name'] as String,
-//           doc['createTime'] as String,
-//           doc['updateTime'] as String));
-//     });
-//     resultNextPageToken =
-//         ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
+  // LIST FROM PATH
+  Future<Map> _listFromPath(String collectionPath,
+      {List<String> idPath = const [],
+      String transactionId = '',
+      bool keepClientOpen = false,
+      int pageSize = 20,
+      String nextPageToken = '',
+      bool ownTransaction = false}) async {
+    final tokenCount = dynamicNameToken.allMatches(collectionPath).length;
+    if (tokenCount != idPath.length) {
+      throw LooseException(
+          '${idPath.length} ids provided and $tokenCount are required.');
+    }
+    var workingPath = '${collectionPath}';
 
-//     return ListResults(LooseListResponse(docs), resultNextPageToken);
-//   }
+    for (final id in idPath) {
+      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
+    }
 
-//   // LIST FROM PATH
-//   Future<Map> _listFromPath(String collectionPath,
-//       {String transactionId = '',
-//       bool keepClientOpen = false,
-//       int pageSize = 20,
-//       String nextPageToken = '',
-//       bool ownTransaction = false}) async {
-//     final params = <String, String>{};
+    final params = <String, String>{};
 
-//     params['pageSize'] = pageSize.toString();
+    params['pageSize'] = pageSize.toString();
 
-//     if (nextPageToken.isNotEmpty) {
-//       params['nextPageToken'] = nextPageToken;
-//     }
+    if (nextPageToken.isNotEmpty) {
+      params['pageToken'] = nextPageToken;
+    }
 
-//     var ownTransactionId = '';
-//     if (transactionId.isNotEmpty) {
-//       params['transaction'] = transactionId;
-//     } else if (ownTransaction) {
-//       ownTransactionId = await _beginTransaction();
-//       params['transaction'] = ownTransactionId;
-//     }
+    var ownTransactionId = '';
+    if (transactionId.isNotEmpty) {
+      params['transaction'] = transactionId;
+    } else if (ownTransaction) {
+      ownTransactionId = await _beginTransaction();
+      params['transaction'] = ownTransactionId;
+    }
 
-//     _client ??= await _createClient();
+    _client ??= await _createClient();
 
-//     final uri =
-//         Uri.https(authority, '${_database.rootPath}$collectionPath', params);
+    final uri =
+        Uri.https(authority, '${_database.rootPath}${workingPath}', params);
 
-//     final res = await _client.get(uri);
+    final res = await _client.get(uri);
 
-//     if (ownTransactionId.isNotEmpty) {
-//       final commit = await _commitTransaction(
-//           transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
-//       if (!commit.ok) {
-//         // TODO: Handle batchGet own transaction commit failure
-//       }
-//     }
+    if (ownTransactionId.isNotEmpty) {
+      final commit = await _commitTransaction(
+          transactionId: ownTransactionId, keepClientOpen: keepClientOpen);
+      if (!commit.ok) {
+        // TODO: Handle batchGet own transaction commit failure
+      }
+    }
 
-//     if (res.statusCode < 200 || res.statusCode > 299) {
-//       // TODO: Handle failed transaction
-//       print('batchGet fail');
-//       print(res.statusCode);
-//       print(res.body);
-//     }
-//     return json.decode(res.body) as Map;
-//   }
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      // TODO: Handle failed transaction
+      print(res.statusCode);
+      print(res.body);
+    }
+    return json.decode(res.body) as Map;
+  }
 
-//   Future<ListResults<T, S>>
-//       list<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-//           Documenter<T, S, R> document,
-//           {int pageSize = 20,
-//           String nextPageToken = '',
-//           bool keepClientOpen = false}) async {
-//     return _listImpl(document,
-//         pageSize: pageSize,
-//         nextPageToken: nextPageToken,
-//         keepClientOpen: keepClientOpen);
-//   }
+  Future<ListResults<T>> list<T>(DocumentRequest<T> request,
+      {List<String> idPath = const [],
+      int pageSize = 20,
+      String nextPageToken = '',
+      bool keepClientOpen = false}) async {
+    return _listImpl(request,
+        idPath: idPath,
+        pageSize: pageSize,
+        nextPageToken: nextPageToken,
+        keepClientOpen: keepClientOpen);
+  }
+}
+
+class CountHandler {
+  final Loose _loose;
+  final Counter _counter;
+  final List<String> _idPath;
+
+  CountHandler(this._loose, this._counter, this._idPath);
+
+  Future<bool> increase({int by = 1, bool keepClientOpen = false}) async {
+    final write = WriteCounter(_counter, by, _idPath, '');
+    final r = await _loose.batchWrite([write], keepClientOpen: keepClientOpen);
+    return !r.hasErrors;
+  }
+
+  Future<bool> decrease({int by = 1, bool keepClientOpen = false}) async {
+    final write = WriteCounter(_counter, by * -1, _idPath, '');
+    final r = await _loose.batchWrite([write], keepClientOpen: keepClientOpen);
+    return !r.hasErrors;
+  }
+
+  Future<int> read({bool keepClientOpen = false}) async {
+    return _loose._readCounterImpl(_counter, keepClientOpen: keepClientOpen);
+  }
+}
+
+class TransactionCountHandler {
+  final Loose _loose;
+  final Counter _counter;
+  final List<String> _idPath;
+  final String _transactionId;
+
+  TransactionCountHandler(
+      this._loose, this._counter, this._idPath, this._transactionId);
+
+  Future<int> read() async {
+    return _loose._readCounterImpl(_counter,
+        idPath: _idPath, transactionId: _transactionId, keepClientOpen: true);
+  }
+}
+
+class DocumentHandler<T, Q extends QueryField> {
+  final DocumentRequest<T> _request;
+  final Loose _loose;
+  const DocumentHandler(this._loose, this._request);
+
+  Future<LooseEntityResponse<T>> create(T entity,
+      {bool autoAssignId = false,
+      List<String> idPath = const [],
+      bool printFields = false,
+      bool keepClientOpen = false}) async {
+    return _loose._create(_request, entity,
+        idPath: idPath,
+        autoAssignId: autoAssignId,
+        printFields: printFields,
+        keepClientOpen: keepClientOpen);
+  }
+
+  Future<LooseEntityResponse<T>> read(
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
+    return _loose._read(_request,
+        idPath: idPath, keepClientOpen: keepClientOpen);
+  }
+
+  Future<LooseEntityResponse<T>> update(T entity, List<Q> fields,
+      {List<String> idPath = const [],
+      bool printFields = false,
+      bool keepClientOpen = false}) async {
+    return _loose._update(_request, entity, fields,
+        idPath: idPath,
+        printFields: printFields,
+        keepClientOpen: keepClientOpen);
+  }
+
+  Future<LooseEntityResponse<T>> delete(
+      {List<String> idPath = const [], bool keepClientOpen = false}) async {
+    return _loose._delete(_request,
+        idPath: idPath, keepClientOpen: keepClientOpen);
+  }
+
+  Future<LooseEntityResponse<T>> updateOrCreate(T entity, List<Q> fields,
+      {List<String> idPath = const [],
+      bool autoAssignId = false,
+      bool printFields = false,
+      bool keepClientOpen = false}) async {
+    final updateRes = await _loose._update(_request, entity, fields,
+        idPath: idPath,
+        printFields: printFields,
+        keepClientOpen: keepClientOpen);
+    if (updateRes.ok) {
+      return updateRes;
+    } else {
+      final c = _loose._create(_request, entity,
+          idPath: idPath,
+          autoAssignId: autoAssignId,
+          printFields: printFields,
+          keepClientOpen: keepClientOpen);
+      return c;
+    }
+  }
 }

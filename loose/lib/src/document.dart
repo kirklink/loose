@@ -6,10 +6,10 @@ class Document implements Resource {
   @override
   final Collection parent;
   @override
-  final String name;
+  final String id;
 
-  const Document(this.parent, [this.name = dynamicNameToken]);
+  const Document(this.parent, [this.id = dynamicNameToken]);
 
   @override
-  String get path => '${parent?.path}/$name';
+  String get path => '${parent?.path}/$id';
 }

@@ -6,13 +6,13 @@ class Collection implements Resource {
   @override
   final Document parent;
   @override
-  final String name;
+  final String id;
 
-  const Collection(this.parent, this.name);
-  const Collection.root(this.name, [this.parent]);
+  const Collection(this.parent, this.id);
+  const Collection.root(this.id, [this.parent]);
 
   bool get isAtRoot => parent == null;
 
   @override
-  String get path => '${parent?.path ?? ""}/$name';
+  String get path => '${parent?.path ?? ""}/$id';
 }

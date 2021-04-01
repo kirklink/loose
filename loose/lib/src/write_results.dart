@@ -1,4 +1,4 @@
-import 'write.dart';
+import 'write.dart' show Writable;
 
 class _WriteResult {
   final String _updateTime;

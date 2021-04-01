@@ -2,10 +2,12 @@ import '../loose_exception.dart';
 // import '../documenter.dart';
 // import '../document_shell.dart';
 import '../document.dart';
+import '../document_request.dart';
 import 'filter.dart';
 import 'order.dart';
 
-class Query {
+class Query<T> {
+  final DocumentRequest<T> request;
   Filter _filter;
   final _orders = <Order>[];
   int _limit;
@@ -13,7 +15,7 @@ class Query {
 
   // final Document document;
 
-  Query(this.document);
+  Query(this.request);
 
   // R get fields => document.fields;
 
@@ -61,7 +63,7 @@ class Query {
   Map<String, Object> encode() {
     final structuredQuery = <String, Object>{
       'from': [
-        {'collectionId': document.parent.name}
+        {'collectionId': request.document.parent.id}
       ]
     };
     if (_filter != null) {

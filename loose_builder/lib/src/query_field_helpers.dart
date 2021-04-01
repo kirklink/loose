@@ -38,6 +38,8 @@ String createDocumentFields(ClassElement element, int recase,
 
   final qClassBuf = StringBuffer();
   final qFieldsBuf = StringBuffer();
+  final qListBuf = StringBuffer();
+  final qSpreadBuf = StringBuffer();
   qClassBuf.writeln('class ${privatePrefix}\$${className}Fields {');
 
   for (final klass in classElements) {
@@ -68,12 +70,14 @@ String createDocumentFields(ClassElement element, int recase,
           final childClass = field.type.element.name;
           qFieldsBuf.writeln(
               'final ${field.name} = __\$${className}__${childClass}Fields();');
+          qSpreadBuf.writeln('...${field.name}.\$all(),');
           pageBuf.writeln(nextPage);
         }
       } else {
         final queryField = convertToQueryField(field, recase, fieldParents);
         if (queryField.isNotEmpty) {
-          qFieldsBuf.writeln(queryField);
+          qFieldsBuf.writeln("final ${field.name} = ${queryField};");
+          qListBuf.writeln("${queryField},");
         }
       }
       if (qFieldsBuf.isEmpty && nestLevel != 0) {
@@ -85,6 +89,10 @@ String createDocumentFields(ClassElement element, int recase,
   if (qFieldsBuf.isEmpty && nestLevel != 0) {
     return '';
   }
+  qFieldsBuf.writeln('List<QueryField> \$all() => <QueryField>[');
+  qFieldsBuf.writeln(qListBuf);
+  qFieldsBuf.writeln(qSpreadBuf);
+  qFieldsBuf.writeln('];');
   qClassBuf.writeln(qFieldsBuf);
   qClassBuf.writeln('}');
   pageBuf.writeln(qClassBuf);
@@ -125,19 +133,19 @@ String convertToQueryField(FieldElement field, int recase,
   dbName = '$parentsString${parentsString.isNotEmpty ? '.' : ''}$dbName';
 
   if (field.type.isDartCoreString) {
-    return "final $fieldName = StringField('$dbName');";
+    return "StringField('$dbName')";
   } else if (field.type.isDartCoreInt) {
-    return "final $fieldName = IntegerField('$dbName');";
+    return "IntegerField('$dbName')";
   } else if (field.type.isDartCoreDouble) {
-    return "final $fieldName = DoubleField('$dbName');";
+    return "DoubleField('$dbName')";
   } else if (field.type.isDartCoreBool) {
-    return "final $fieldName = BoolField('$dbName');";
+    return "BoolField('$dbName')";
   } else if (field.type.getDisplayString(withNullability: false) ==
       'DateTime') {
-    return "final $fieldName = DateTimeField('$dbName');";
+    return "DateTimeField('$dbName')";
   } else if (field.type.getDisplayString(withNullability: false) ==
       'Reference') {
-    return "final $fieldName = ReferenceField('$dbName');";
+    return "ReferenceField('$dbName')";
 
     // LIST
   } else if (field.type.isDartCoreList) {
@@ -156,7 +164,7 @@ String convertToQueryField(FieldElement field, int recase,
     }
     final elementType = types.first;
     var buf = StringBuffer();
-    buf.write("final $fieldName = ArrayField('$dbName', ");
+    buf.write("ArrayField('$dbName', ");
     if (elementType.isDartCoreString) {
       buf.write("(String e) => {'stringValue': e}");
     } else if (elementType.isDartCoreInt) {
@@ -178,7 +186,7 @@ String convertToQueryField(FieldElement field, int recase,
     } else {
       return '';
     }
-    buf.write(");");
+    buf.write(")");
     return buf.toString();
   } else if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element) ||
       _checkForLooseMap.hasAnnotationOfExact(field.type.element)) {

@@ -1,5 +1,5 @@
 abstract class Resource {
   Resource get parent;
-  String get name;
+  String get id;
   String get path;
 }

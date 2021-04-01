@@ -3,51 +3,23 @@ import 'document.dart';
 import 'loose_exception.dart';
 
 class Counter {
-  final Document _document;
+  final _countField = 'c';
+
+  final Document document;
   final int _numShards;
-  final String fieldPath = 'c';
 
-  List<String> get shards {
-    final paths = <String>[];
-    for (var i = 0; i < _numShards; i++) {
-      paths.add('${_document.path}/shards/$i');
-    }
-    return paths;
-  }
+  Map<String, String> get fieldPath => {'fieldPath': '${_countField}'};
+  String get counterField => _countField;
+  String get collection => '${document.path}/shards';
 
-  String get location => '${_document.path}/shards';
+  Counter(this.document, [this._numShards = 1]);
 
-  Counter._(this._document, this._numShards);
-
-  factory Counter(Document document, [int numShards = 1]) {
-    if (numShards > 999) {
-      throw LooseException('Maximum number of shards is 999.');
-    }
-    return _counters.putIfAbsent(
-        document.path, () => Counter._(document, numShards));
-  }
-
-  int _getId() {
-    final random = Random();
-    return random.nextInt(_numShards);
-  }
-
-  Shard increase([int by = 1]) {
-    final id = _getId();
-    return Shard('${_document.path}/shards/$id', fieldPath, by);
-  }
-
-  Shard decrease([int by = 1]) {
-    final id = _getId();
-    return Shard('${_document.path}/shards/$id', fieldPath, (by * -1));
-  }
-
-  static final _counters = <String, Counter>{};
+  String shard() => Random().nextInt(_numShards).toString();
 }
 
-class Shard {
-  final String documentPath;
-  final String fieldPath;
-  final int increment;
-  Shard(this.documentPath, this.fieldPath, this.increment);
-}
+// class Shard {
+//   final String documentPath;
+//   final String fieldPath;
+//   final int increment;
+//   Shard(this.documentPath, this.fieldPath, this.increment);
+// }

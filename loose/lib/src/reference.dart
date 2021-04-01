@@ -10,11 +10,11 @@ class Reference {
 
   Reference(Document document, FirestoreDatabase database,
       {List<String> idPath = const []}) {
-    if (document.name == dynamicNameToken && idPath.isEmpty) {
+    if (document.id == dynamicNameToken && idPath.isEmpty) {
       throw LooseException('A document name must be provided.');
     }
     var name = '';
-    if (document.name == dynamicNameToken) {
+    if (document.id == dynamicNameToken) {
       name = idPath.removeLast();
     }
     var workingPath = '${document.path}';
