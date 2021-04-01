@@ -1,4 +1,3 @@
-import 'document_response.dart';
 import 'loose_response.dart';
 
 class ListResults<DocumentResponse> extends LooseResponse {

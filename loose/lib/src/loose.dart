@@ -3,7 +3,6 @@ import 'package:googleapis_auth/auth_io.dart' as auth;
 
 import './loose_credentials.dart';
 
-import 'document.dart';
 import 'document_response.dart';
 import 'document_request.dart';
 import 'loose_response.dart';
@@ -96,21 +95,28 @@ class Transaction {
     }
   }
 
-  // Future<ListResults<T, S>>
-  //     list<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-  //         Documenter<T, S, R> document,
-  //         {int pageSize = 20,
-  //         String nextPageToken = ''}) async {
-  //   return _loose._listImpl(document,
-  //       keepClientOpen: true, pageSize: pageSize, nextPageToken: nextPageToken);
-  // }
+  Future<ListResults<T>> list<T>(DocumentRequest<T> document,
+      {List<String> idPath = const [],
+      int pageSize = 20,
+      String nextPageToken = ''}) async {
+    return _loose._listImpl(document,
+        idPath: idPath,
+        transactionId: id,
+        keepClientOpen: true,
+        pageSize: pageSize,
+        nextPageToken: nextPageToken);
+  }
 
-  // Future<LooseListResponse<T, S>>
-  //     query<T extends DocumentResponse<S>, S, R extends DocumentFields>(
-  //         Query<T, S, R> query) async {
-  //   _checkComplete();
-  //   return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
-  // }
+  Future<BatchGetResults> batchGet<T>(
+      BatchGetRequest<T> batchGetRequest) async {
+    return _loose._batchGetImpl(batchGetRequest,
+        keepClientOpen: true, transactionId: id);
+  }
+
+  Future<LooseListResponse<T>> query<T>(Query<T> query) async {
+    _checkComplete();
+    return _loose._queryImpl(query, keepClientOpen: true, transactionId: id);
+  }
 
   Future<CommitResult> commit(
       {List<Writable> writes = const [], bool keepClientOpen = false}) async {
@@ -606,6 +612,11 @@ class Loose {
 
   // BATCH GET
   Future<BatchGetResults> batchGet<T>(BatchGetRequest<T> batchGetRequest,
+      {bool keepClientOpen = false}) async {
+    return _batchGetImpl(batchGetRequest, keepClientOpen: keepClientOpen);
+  }
+
+  Future<BatchGetResults> _batchGetImpl<T>(BatchGetRequest<T> batchGetRequest,
       {bool keepClientOpen = false, String transactionId = ''}) async {
     final docs = <String, DocumentRequest<T>>{};
 
