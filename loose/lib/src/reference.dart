@@ -1,4 +1,6 @@
-import 'document.dart';
+import 'package:loose/src/document_request.dart';
+
+import 'document_request.dart';
 import 'firestore_database.dart';
 import 'loose_exception.dart';
 import 'constants.dart';
@@ -6,29 +8,22 @@ import 'constants.dart';
 class Reference {
   String _location;
 
-  // String get location => _location;
+  String get name => _location;
 
-  Reference(Document document, FirestoreDatabase database,
+  Reference(DocumentRequest request, FirestoreDatabase database,
       {List<String> idPath = const []}) {
-    if (document.id == dynamicNameToken && idPath.isEmpty) {
-      throw LooseException('A document name must be provided.');
-    }
-    var name = '';
-    if (document.id == dynamicNameToken) {
-      name = idPath.removeLast();
-    }
-    var workingPath = '${document.path}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-
-    if (ancestorCount != idPath.length) {
+    final tokenCount =
+        dynamicNameToken.allMatches(request.document.path).length;
+    if (tokenCount != idPath.length) {
       throw LooseException(
-          '${idPath.length} ancestor ids were provided. $ancestorCount required in $workingPath');
+          '${idPath.length} ids provided and $tokenCount are required.');
     }
+    var workingPath = '${request.document.path}';
 
     for (final id in idPath) {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
     }
-    _location = '${database.documentRoot}${workingPath}/$name';
+    _location = '${database.documentRoot}${workingPath}';
   }
 
   @override

@@ -8,7 +8,7 @@ dependencies:
   # loose: ^0.0.79
   loose:
     path: ../loose
-  source_gen: ^0.9.0
+  source_gen: ^0.9.7+1
   build: ^1.5.1
   analyzer: ^0.40.4
   recase: ^3.0.0

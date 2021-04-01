@@ -1,7 +1,5 @@
 import '../loose_exception.dart';
-// import '../documenter.dart';
-// import '../document_shell.dart';
-import '../document.dart';
+import '../constants.dart';
 import '../document_request.dart';
 import 'filter.dart';
 import 'order.dart';
@@ -12,10 +10,23 @@ class Query<T> {
   final _orders = <Order>[];
   int _limit;
   int _offset;
+  String _workingPath;
 
-  // final Document document;
+  String get location => _workingPath;
 
-  Query(this.request);
+  Query(this.request, {List<String> idPath = const []}) {
+    _workingPath = request.document.parent?.parent?.path ?? '';
+
+    final tokenCount = dynamicNameToken.allMatches(_workingPath).length;
+    if (tokenCount != idPath.length) {
+      throw LooseException(
+          '${idPath.length} ids provided and $tokenCount are required.');
+    }
+
+    for (final id in idPath) {
+      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
+    }
+  }
 
   // R get fields => document.fields;
 

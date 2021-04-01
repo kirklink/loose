@@ -179,8 +179,9 @@ class Loose {
     }
   }
 
-  Reference reference(Document document, {List<String> idPath = const []}) {
-    return Reference(document, _database, idPath: idPath);
+  Reference reference(DocumentRequest request,
+      {List<String> idPath = const []}) {
+    return Reference(request, _database, idPath: idPath);
   }
 
   void done() {
@@ -210,6 +211,10 @@ class Loose {
       bool autoAssignId = false,
       bool printFields = false,
       bool keepClientOpen = false}) async {
+    print(request.document.id);
+    print(request.document.path);
+    print(request.document.parent.parent.path);
+
     final tokenCount =
         dynamicNameToken.allMatches(request.document.path).length;
     var idCount = autoAssignId ? idPath.length + 1 : idPath.length;
@@ -424,7 +429,7 @@ class Loose {
 
     final reqBody = json.encode(rawBody);
 
-    final path = query.request.document.parent?.parent?.path ?? '';
+    final path = query.location;
 
     final uri = Uri.https(authority, '${_database.rootPath}${path}:runQuery');
 
@@ -612,14 +617,8 @@ class Loose {
       docs['${_database.documentRoot}${key}'] = batchGetRequest.documents[key];
     });
 
-    docs.keys.forEach((k) {
-      print('$k: ${docs[k]}');
-    });
-
     final decoded = await _batchGetFromPaths(docs.keys.toList(),
         transactionId: transactionId, keepClientOpen: keepClientOpen);
-
-    print(decoded);
 
     var found = <DocumentResponse<T>>[];
     var missing = <String>[];

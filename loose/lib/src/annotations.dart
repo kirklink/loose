@@ -9,13 +9,12 @@ import 'document.dart';
 /// [readOnly]: Throws a LooseException if tried to write to the database.
 class LooseDocument {
   final Case useCase;
-  final Document document;
+  // final Document document;
   final bool allowNulls;
   final bool useDefaultValues;
   final bool readonlyNulls;
   final bool suppressWarnings;
-  const LooseDocument(
-    this.document, {
+  const LooseDocument({
     this.useCase = Case.none,
     this.allowNulls = false,
     this.useDefaultValues = false,
