@@ -79,23 +79,6 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     final suppressWarnings =
         annotation.peek('suppressWarning')?.boolValue ?? false;
 
-    print('getting name');
-    var name = annotation.peek('document')?.peek('name')?.stringValue;
-    print('getting parent');
-    var parent = annotation.peek('document').peek('parent');
-    print('getting collection');
-    var collection = parent?.peek('name')?.stringValue;
-
-    final path = <String>[];
-
-    print('getting parent again');
-    parent = parent.peek('parent');
-
-    while (parent != null) {
-      path.add(parent.peek('name').stringValue);
-      parent = parent.peek('parent');
-    }
-
     final classBuf = StringBuffer();
 
     final className = '${element.name}';
