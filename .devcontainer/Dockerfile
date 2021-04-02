@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
-FROM google/dart:2.10.2
+FROM google/dart:2.12.2
 
 
 # Docker script args, location, and expected SHA - SHA generated on release
@@ -66,18 +66,18 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* \
-    && curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz \
-    # Install the gcloud package
-    && mkdir -p /usr/local/gcloud \
-    && tar -C /usr/local/gcloud -xvf /tmp/google-cloud-sdk.tar.gz \
-    && /usr/local/gcloud/google-cloud-sdk/install.sh --quiet
+    # && curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz \
+    # # Install the gcloud package
+    # && mkdir -p /usr/local/gcloud \
+    # && tar -C /usr/local/gcloud -xvf /tmp/google-cloud-sdk.tar.gz \
+    # && /usr/local/gcloud/google-cloud-sdk/install.sh --quiet
 
 # Adding the package path to local
-ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
+# ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 
 # Install kubectl and make sure gcloud is up to date
-RUN gcloud components install kubectl \
-  && gcloud components update --quiet
+# RUN gcloud components install kubectl \
+#   && gcloud components update --quiet
 
 # Copy localhost's ~/.kube/config file into the container and swap out localhost
 # for host.docker.internal whenever a new shell starts to keep them in sync.

@@ -6,8 +6,7 @@ version: 0.0.80
 environment:
   sdk: '>=2.8.0 <3.0.0'
 dependencies:
-  googleapis_auth: ^0.2.12
+  googleapis_auth: ^1.1.0
 dev_dependencies:
-  build_runner: any
-  pedantic: any
+  pedantic: ^1.11.0
   
