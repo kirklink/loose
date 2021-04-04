@@ -1,11 +1,10 @@
 import 'dart:math' as math;
 
-import 'document_request.dart';
-import 'constants.dart';
-import 'loose.dart';
-import 'loose_exception.dart';
-import 'counter.dart';
-import 'query/query_field.dart';
+import '../document_request.dart';
+import '../constants.dart';
+import '../loose.dart';
+import '../counter.dart';
+import '../document_field.dart';
 import 'transformer.dart';
 
 class Write<T> {
@@ -22,7 +21,7 @@ class Write<T> {
         _request, entity, idPath, autoAssignId, transforms, label);
   }
 
-  WriteUpdate<T> update(T entity, List<QueryField> updateFields,
+  WriteUpdate<T> update(T entity, List<DocumentField> updateFields,
       {List<String> idPath = const [],
       List<Transformer> transforms = const [],
       String label = ''}) {
@@ -81,42 +80,27 @@ String _generateId() {
 class WriteCreate<T> implements Writable {
   final DocumentRequest<T> _request;
   final bool _autoAssignId;
-  List<String> _idPath;
   final List<Transformer> _transforms;
   final T _entity;
   @override
   final String label;
-  String _workingPath = '';
+  final String _workingPath;
   @override
   String get name => _workingPath;
 
   WriteCreate(this._request, this._entity, List<String> idPath,
-      this._autoAssignId, this._transforms, this.label) {
-    _idPath = List.of(idPath);
-    if (_autoAssignId) {
-      _idPath.add(_generateId());
-    }
-    final tokenCount =
-        dynamicNameToken.allMatches(_request.document.path).length;
-    if (tokenCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ids provided and $tokenCount are required.');
-    }
-
-    _workingPath = _request.document.path;
-
-    for (final id in _idPath) {
-      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
+      this._autoAssignId, this._transforms, this.label)
+      : _workingPath = _request.document.resolvePath(idPath, _autoAssignId);
 
   @override
   Map<String, Object> write(Loose loose) {
     final document = _request.toFirestore(_entity);
 
-    var name = '${loose.documentRoot}${_workingPath}';
-
-    document.addAll({'name': name});
+    var path = '${loose.documentRoot}${_workingPath}';
+    if (_autoAssignId) {
+      path = path.replaceFirst(dynamicNameToken, _generateId());
+    }
+    document.addAll({'name': path});
 
     final currentDocument = {'exists': false};
 
@@ -135,39 +119,27 @@ class WriteCreate<T> implements Writable {
 
 class WriteUpdate<T> implements Writable {
   final DocumentRequest<T> _request;
-  final List<QueryField> _updateFields;
-  final List<String> _idPath;
+  final List<DocumentField> _updateFields;
   final List<Transformer> _transforms;
   final T _entity;
   @override
   final String label;
-  String _workingPath;
+  final String _workingPath;
   @override
   String get name => _workingPath;
 
-  WriteUpdate(this._request, this._entity, this._updateFields, this._idPath,
-      this._transforms, this.label) {
-    final tokenCount =
-        dynamicNameToken.allMatches(_request.document.path).length;
-    if (tokenCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ids provided and $tokenCount are required.');
-    }
-    _workingPath = '${_request.document.path}';
-
-    for (final id in _idPath) {
-      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
+  WriteUpdate(this._request, this._entity, this._updateFields,
+      List<String> idPath, this._transforms, this.label)
+      : _workingPath = _request.document.resolvePath(idPath);
 
   @override
   Map<String, Object> write(Loose loose) {
     final updateMask = {
       'fieldPaths': _updateFields.map((e) => e.name).toList()
     };
-    final name = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}${_workingPath}';
     final update = _request.toFirestore(_entity);
-    update.addAll({'name': name});
+    update.addAll({'name': path});
     final currentDocument = {'exists': true};
     final result = <String, Object>{
       'updateMask': updateMask,
@@ -182,102 +154,66 @@ class WriteUpdate<T> implements Writable {
 }
 
 class WriteDelete implements Writable {
-  final DocumentRequest _request;
-  final List<String> _idPath;
   @override
   final String label;
-  String _workingPath;
+  final String _workingPath;
   @override
   String get name => _workingPath;
 
-  WriteDelete(this._request, this._idPath, this.label) {
-    final tokenCount =
-        dynamicNameToken.allMatches(_request.document.path).length;
-    if (tokenCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ids provided and $tokenCount are required.');
-    }
-    _workingPath = '${_request.document.path}';
-    for (final id in _idPath) {
-      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
+  WriteDelete(DocumentRequest request, List<String> idPath, this.label)
+      : _workingPath = request.document.resolvePath(idPath);
 
   @override
   Map<String, Object> write(Loose loose) {
-    final name = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}${_workingPath}';
     return {
-      'delete': name,
+      'delete': path,
     };
   }
 }
 
 class WriteTransform implements Writable {
-  final DocumentRequest _request;
-  final List<String> _idPath;
   final List<Transformer> _transforms;
   @override
   final String label;
-  String _workingPath;
+  final String _workingPath;
   @override
   String get name => _workingPath;
 
-  WriteTransform(this._request, this._transforms, this._idPath, this.label) {
-    final tokenCount =
-        dynamicNameToken.allMatches(_request.document.path).length;
-    if (tokenCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ids provided and $tokenCount are required.');
-    }
-    var workingPath = '${_request.document.path}';
-
-    for (final id in _idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
+  WriteTransform(DocumentRequest request, this._transforms, List<String> idPath,
+      this.label)
+      : _workingPath = request.document.resolvePath(idPath);
 
   @override
   Map<String, Object> write(Loose loose) {
-    final name = '${loose.documentRoot}${_workingPath}';
-    final result = <String, Object>{'document': name};
+    final path = '${loose.documentRoot}${_workingPath}';
+    final result = <String, Object>{'document': path};
     result['fieldTransforms'] = _transforms.map((e) => e.transform()).toList();
     return {'transform': result};
   }
 }
 
 class WriteCounter implements Writable {
-  final Counter _counter;
   final int _increment;
-  final List<String> _idPath;
   @override
   final String label;
-  String _workingPath;
+  final String _workingPath;
   @override
   String get name => _workingPath;
 
-  WriteCounter(this._counter, this._increment, this._idPath, this.label) {
-    final tokenCount =
-        dynamicNameToken.allMatches(_counter.document.path).length;
-    if (tokenCount != _idPath.length) {
-      throw LooseException(
-          '${_idPath.length} ids provided and $tokenCount are required.');
-    }
-    _workingPath = '${_counter.collection}';
-
-    for (final id in _idPath) {
-      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
+  WriteCounter(
+      Counter counter, this._increment, List<String> idPath, this.label)
+      : _workingPath = counter.shard().resolvePath(idPath);
 
   @override
   Map<String, Object> write(Loose loose) {
-    final name = '${loose.documentRoot}${_workingPath}/${_counter.shard()}';
+    final path = '${loose.documentRoot}${_workingPath}';
     return {
       'transform': {
-        'document': name,
+        'document': path,
         'fieldTransforms': [
           {
-            ..._counter.fieldPath,
+            ...Counter.fieldPath,
             'increment': {'integerValue': _increment.toString()}
           }
         ]

@@ -16,4 +16,4 @@ enum ListOp {
 
 enum UnaryOp { isNaN, isNull }
 
-enum Direction { asc, dsc }
+enum SortDirection { asc, dsc }

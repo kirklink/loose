@@ -9,16 +9,7 @@ class BatchGetRequest<T> {
   Map<String, DocumentRequest<T>> get documents => Map.unmodifiable(_documents);
 
   void add(DocumentRequest<T> request, {List<String> idPath = const []}) {
-    final tokenCount =
-        dynamicNameToken.allMatches(request.document.path).length;
-    if (tokenCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} ids provided and $tokenCount are required.');
-    }
-    var workingPath = request.document.path;
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
+    final workingPath = request.document.resolvePath(idPath);
     _documents.putIfAbsent(workingPath, () => request);
     return;
   }

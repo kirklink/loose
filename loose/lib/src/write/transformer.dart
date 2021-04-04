@@ -1,4 +1,4 @@
-import 'query/query_field.dart';
+import '../document_field.dart';
 
 abstract class Transformer {
   Map<String, Object> transform();
