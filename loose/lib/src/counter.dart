@@ -1,25 +1,18 @@
 import 'dart:math' show Random;
 import 'document.dart';
+import 'collection.dart';
 import 'loose_exception.dart';
 
-class Counter {
-  final _countField = 'c';
+class Counter extends Collection {
+  static const String counterFieldName = 'c';
+  static const Map<String, String> fieldPath = {'fieldPath': counterFieldName};
 
-  final Document document;
   final int _numShards;
 
-  Map<String, String> get fieldPath => {'fieldPath': '${_countField}'};
-  String get counterField => _countField;
-  String get collection => '${document.path}/shards';
+  Counter(Document document, [this._numShards = 1]) : super(document, 'shards');
 
-  Counter(this.document, [this._numShards = 1]);
-
-  String shard() => Random().nextInt(_numShards).toString();
+  Document shard() {
+    final random = Random().nextInt(_numShards).toString();
+    return Document(this, random);
+  }
 }
-
-// class Shard {
-//   final String documentPath;
-//   final String fieldPath;
-//   final int increment;
-//   Shard(this.documentPath, this.fieldPath, this.increment);
-// }

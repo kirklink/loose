@@ -1,5 +1,5 @@
-import 'document_response.dart';
-import 'loose_exception.dart';
+import '../document_response.dart';
+import '../loose_exception.dart';
 
 class LooseError {
   final int code;

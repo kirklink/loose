@@ -1,5 +1,5 @@
 import 'loose_response.dart';
-import 'write_results.dart';
+import '../write/write_results.dart';
 
 class CommitResult extends LooseResponse {
   WriteResults _writeResults;

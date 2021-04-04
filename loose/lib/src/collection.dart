@@ -1,4 +1,3 @@
-// import 'package:loose/annotations.dart';
 import 'resource.dart';
 import 'document.dart';
 

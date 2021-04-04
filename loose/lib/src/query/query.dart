@@ -1,75 +1,25 @@
-import '../loose_exception.dart';
-import '../constants.dart';
 import '../document_request.dart';
 import 'filter.dart';
-import 'order.dart';
+import 'sort_order.dart';
 
 class Query<T> {
   final DocumentRequest<T> request;
-  Filter _filter;
-  final _orders = <Order>[];
-  int _limit;
-  int _offset;
-  String _workingPath;
+  final Filter filter;
+  final List<SortOrder> orderBy;
+  final int limit;
+  final int offset;
+  final String _workingPath;
 
   String get location => _workingPath;
 
-  Query(this.request, {List<String> idPath = const []}) {
-    _workingPath = request.document.parent?.parent?.path ?? '';
-
-    final tokenCount = dynamicNameToken.allMatches(_workingPath).length;
-    if (tokenCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} ids provided and $tokenCount are required.');
-    }
-
-    for (final id in idPath) {
-      _workingPath = _workingPath.replaceFirst(dynamicNameToken, id);
-    }
-  }
-
-  // R get fields => document.fields;
-
-  void filter(Filter filter) {
-    if (_filter != null) {
-      throw LooseException(
-          'Attempting to change a filter which has already been set.');
-    }
-    _filter = filter;
-  }
-
-  // Filter filter = Filter();
-
-  void order(List<Order> orders) {
-    if (_orders.isNotEmpty) {
-      throw LooseException('The order has already been set on this query.');
-    }
-    _orders.addAll(orders);
-  }
-
-  void limit(int value) {
-    if (_limit != null) {
-      throw LooseException(
-          'Attempting to change a limit which has already been set.');
-    }
-    if (value < 0) {
-      throw LooseException(
-          'The query limit must be >= 0. "$value" was provided.');
-    }
-    _limit = value;
-  }
-
-  void offset(int value) {
-    if (_offset != null) {
-      throw LooseException(
-          'Attempting to change an offset which has already been set.');
-    }
-    if (value < 0) {
-      throw LooseException(
-          'The query offset must be >= 0. "$value" was provided.');
-    }
-    _offset = value;
-  }
+  Query(this.request,
+      {List<String> idPath = const [],
+      this.filter,
+      this.orderBy = const [],
+      this.limit,
+      this.offset})
+      : _workingPath =
+            request.document.parent?.parent?.resolvePath(idPath) ?? '';
 
   Map<String, Object> encode() {
     final structuredQuery = <String, Object>{
@@ -77,18 +27,18 @@ class Query<T> {
         {'collectionId': request.document.parent.id}
       ]
     };
-    if (_filter != null) {
-      structuredQuery.addAll({'where': _filter?.encode() ?? const {}});
+    if (filter != null) {
+      structuredQuery.addAll({'where': filter?.encode() ?? const {}});
     }
-    if (_orders.isNotEmpty) {
+    if (orderBy.isNotEmpty) {
       structuredQuery
-          .addAll({'orderBy': _orders.map((e) => e.encode).toList()});
+          .addAll({'orderBy': orderBy.map((e) => e.encode).toList()});
     }
-    if (_offset != null) {
-      structuredQuery.addAll({'offset': _offset});
+    if (offset != null) {
+      structuredQuery.addAll({'offset': offset});
     }
-    if (_limit != null) {
-      structuredQuery.addAll({'limit': _limit});
+    if (limit != null) {
+      structuredQuery.addAll({'limit': limit});
     }
     return {'structuredQuery': structuredQuery};
   }

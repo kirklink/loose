@@ -89,7 +89,7 @@ String createDocumentFields(ClassElement element, int recase,
   if (qFieldsBuf.isEmpty && nestLevel != 0) {
     return '';
   }
-  qFieldsBuf.writeln('List<QueryField> \$all() => <QueryField>[');
+  qFieldsBuf.writeln('List<DocumentField> \$all() => <DocumentField>[');
   qFieldsBuf.writeln(qListBuf);
   qFieldsBuf.writeln(qSpreadBuf);
   qFieldsBuf.writeln('];');

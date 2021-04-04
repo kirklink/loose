@@ -5,20 +5,20 @@ import './loose_credentials.dart';
 
 import 'document_response.dart';
 import 'document_request.dart';
-import 'loose_response.dart';
+import 'loose_response/loose_response.dart';
 import 'reference.dart';
 import 'firestore_database.dart';
 import 'constants.dart';
-import 'write_results.dart';
-import 'list_result.dart';
-import 'commit_result.dart';
+import 'write/write_results.dart';
+import 'loose_response/list_result.dart';
+import 'loose_response/commit_result.dart';
 import 'loose_exception.dart';
-import 'write.dart';
+import 'write/write.dart';
 import 'counter.dart';
 import 'query/query.dart';
-import 'query/query_field.dart';
+import 'document_field.dart';
 import 'batch_get_request.dart';
-import 'batch_get_result.dart';
+import 'loose_response/batch_get_result.dart';
 
 abstract class LooseErrors {
   static LooseError documentExists(String serverMessage) =>
@@ -29,7 +29,7 @@ abstract class LooseErrors {
       LooseError(500, 'Call to Firestore failed.', serverMessage);
 }
 
-class _TransactionDocumentHandler<T, Q extends QueryField> {
+class _TransactionDocumentHandler<T, Q extends DocumentField> {
   final DocumentRequest<T> _request;
   final Transaction _transaction;
   const _TransactionDocumentHandler(this._transaction, this._request);
@@ -64,7 +64,7 @@ class Transaction {
     }
   }
 
-  _TransactionDocumentHandler<T, Q> document<T, Q extends QueryField>(
+  _TransactionDocumentHandler<T, Q> document<T, Q extends DocumentField>(
       DocumentRequest<T> request) {
     return _TransactionDocumentHandler(this, request);
   }
@@ -201,7 +201,7 @@ class Loose {
     return Transaction.newTransaction(this);
   }
 
-  DocumentHandler<T, Q> document<T, Q extends QueryField>(
+  DocumentHandler<T, Q> document<T, Q extends DocumentField>(
       DocumentRequest<T> request) {
     return DocumentHandler(this, request);
   }
@@ -217,29 +217,15 @@ class Loose {
       bool autoAssignId = false,
       bool printFields = false,
       bool keepClientOpen = false}) async {
-    final tokenCount =
-        dynamicNameToken.allMatches(request.document.path).length;
-    var idCount = autoAssignId ? idPath.length + 1 : idPath.length;
+    var workingPath = request.document.resolvePath(idPath, autoAssignId);
 
-    if (tokenCount != idCount) {
-      throw LooseException(
-          '$idCount ids provided and $tokenCount are required.');
-    }
-
-    var workingPath = request.document.path;
     var docId = '';
-    if (workingPath.endsWith(dynamicNameToken) && !autoAssignId) {
-      docId = idPath.removeLast();
-    }
-
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-
     if (autoAssignId) {
       workingPath = workingPath.replaceFirst('/' + dynamicNameToken, '');
     } else {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, '');
+      final split = workingPath.split('/');
+      docId = split.removeLast();
+      workingPath = split.join('/');
     }
 
     _client ??= await _createClient();
@@ -278,16 +264,7 @@ class Loose {
       bool keepClientOpen = false,
       bool ignoreContent = false,
       String transactionId = ''}) async {
-    var workingPath = '${request.document.path}';
-
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
+    final workingPath = request.document.resolvePath(idPath);
 
     _client ??= await _createClient();
 
@@ -338,20 +315,12 @@ class Loose {
   }
 
   // UPDATE
-  Future<LooseEntityResponse<T>> _update<T, Q extends QueryField>(
+  Future<LooseEntityResponse<T>> _update<T, Q extends DocumentField>(
       DocumentRequest<T> request, T entity, List<Q> updateFields,
       {List<String> idPath = const [],
       bool printFields = false,
       bool keepClientOpen = false}) async {
-    var workingPath = '${request.document.path}';
-    final ancestorCount = workingPath.split(dynamicNameToken).length - 1;
-    if (ancestorCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} document ids were provided. $ancestorCount required in $workingPath');
-    }
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
+    final workingPath = request.document.resolvePath(idPath);
 
     _client ??= await _createClient();
 
@@ -386,21 +355,9 @@ class Loose {
   }
 
   // DELETE
-  Future<LooseEntityResponse<T>> _delete<T>(DocumentRequest<T> loose,
+  Future<LooseEntityResponse<T>> _delete<T>(DocumentRequest<T> request,
       {List<String> idPath = const [], bool keepClientOpen = false}) async {
-    final tokenCount = dynamicNameToken.allMatches(loose.document.path).length;
-    final idCount = idPath.length;
-
-    if (tokenCount != idCount) {
-      throw LooseException(
-          '$idCount ids provided and $tokenCount are required.');
-    }
-
-    var workingPath = loose.document.path;
-
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
+    final workingPath = request.document.resolvePath(idPath);
 
     _client ??= await _createClient();
 
@@ -690,7 +647,7 @@ class Loose {
     var nextPageToken = '';
     var result = 0;
     do {
-      final shards = await _listFromPath(counter.collection,
+      final shards = await _listFromPath(counter.path,
           idPath: idPath,
           pageSize: 10,
           keepClientOpen: keepClientOpen,
@@ -699,8 +656,9 @@ class Loose {
           nextPageToken: nextPageToken);
 
       ((shards as Map<String, Object>)['documents'] as List).forEach((e) {
-        final fields = (e as Map<String, Object>)['fields'];
-        final field = (fields as Map<String, Object>)[counter.counterField];
+        final fields =
+            ((e as Map<String, Object>)['fields']) as Map<String, Object>;
+        final field = (fields)[Counter.counterFieldName];
         final value = int.tryParse(
             (field as Map<String, Object>)['integerValue'] as String);
         if (value == null) {
@@ -853,7 +811,7 @@ class TransactionCountHandler {
   }
 }
 
-class DocumentHandler<T, Q extends QueryField> {
+class DocumentHandler<T, Q extends DocumentField> {
   final DocumentRequest<T> _request;
   final Loose _loose;
   const DocumentHandler(this._loose, this._request);
