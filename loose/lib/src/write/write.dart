@@ -1,12 +1,8 @@
 import 'dart:math' as math;
 
-// import 'package:uuid/uuid.dart';
-// import 'package:uuid/uuid_util.dart';
-
 import '../document_request.dart';
 import '../constants.dart';
 import '../loose.dart';
-import '../loose_exception.dart';
 import '../counter.dart';
 import '../document_field.dart';
 import 'transformer.dart';
