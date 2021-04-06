@@ -236,7 +236,7 @@ class Loose {
     }
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}${workingPath}', queryParameters);
+        authority, '${_database.rootPath}$workingPath', queryParameters);
 
     final reqBody = request.toFirestore(entity);
     if (printFields) {
@@ -274,7 +274,7 @@ class Loose {
     }
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}${workingPath}', queryParameters);
+        authority, '${_database.rootPath}$workingPath', queryParameters);
     final res = await _client.get(uri);
 
     if (!keepClientOpen) {
@@ -286,7 +286,7 @@ class Loose {
     }
 
     if (ignoreContent) {
-      final response = DocumentResponse.empty<T>();
+      final response = DocumentResponse.empty as DocumentResponse<T>;
       return LooseEntityResponse(response);
     } else {
       final resBody = json.decode(res.body) as Map<String, Object>;
@@ -332,7 +332,7 @@ class Loose {
     final uri = Uri(
         scheme: 'https',
         host: authority,
-        path: '${_database.rootPath}${workingPath}',
+        path: '${_database.rootPath}$workingPath',
         queryParameters: params);
     final reqBody = request.toFirestore(entity);
 
@@ -364,7 +364,7 @@ class Loose {
     final queryParameters = <String, String>{};
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}${workingPath}', queryParameters);
+        authority, '${_database.rootPath}$workingPath', queryParameters);
     final res = await _client.delete(uri);
     if (!keepClientOpen) {
       done();
@@ -372,7 +372,7 @@ class Loose {
     if (res.statusCode < 200 || res.statusCode > 299) {
       return _singleEntityResponseFails<T>(res.statusCode, res.body);
     }
-    return LooseEntityResponse(DocumentResponse.empty<T>());
+    return LooseEntityResponse(DocumentResponse.empty as DocumentResponse<T>);
   }
 
   // QUERY
@@ -390,7 +390,7 @@ class Loose {
 
     final path = query.location;
 
-    final uri = Uri.https(authority, '${_database.rootPath}${path}:runQuery');
+    final uri = Uri.https(authority, '${_database.rootPath}$path:runQuery');
 
     final res = await _client.post(uri, body: reqBody);
 
@@ -468,14 +468,17 @@ class Loose {
     switch (statusCode) {
       case 409:
         return LooseEntityResponse.fail(
-            LooseErrors.documentExists(serverResponse));
+            LooseErrors.documentExists(serverResponse),
+            DocumentResponse.empty as DocumentResponse<T>);
         break;
       case 404:
-        return LooseEntityResponse.fail(LooseErrors.notFound(serverResponse));
+        return LooseEntityResponse.fail(LooseErrors.notFound(serverResponse),
+            DocumentResponse.empty as DocumentResponse<T>);
         break;
       default:
         return LooseEntityResponse.fail(
-            LooseErrors.apiCallFailed(serverResponse));
+            LooseErrors.apiCallFailed(serverResponse),
+            DocumentResponse.empty as DocumentResponse<T>);
     }
   }
 
@@ -519,7 +522,7 @@ class Loose {
     }
     final resBody = json.decode(res.body) as Map<String, Object>;
     return CommitResult(
-        WriteResults(writes, resBody), resBody['commitTime'] as String);
+        WriteResults(writes, resBody), resBody['commitTime'] as String ?? '');
   }
 
   Future<bool> _rollbackTransaction(String transactionId) async {
@@ -578,7 +581,7 @@ class Loose {
     final docs = <String, DocumentRequest<T>>{};
 
     batchGetRequest.documents.keys.forEach((key) {
-      docs['${_database.documentRoot}${key}'] = batchGetRequest.documents[key];
+      docs['${_database.documentRoot}$key'] = batchGetRequest.documents[key];
     });
 
     final decoded = await _batchGetFromPaths(docs.keys.toList(),
@@ -594,11 +597,11 @@ class Loose {
         final request = docs[name];
         found.add(request.fromFirestore(doc));
       } else if ((e as Map<String, Object>).containsKey('missing')) {
-        missing.add((e as Map<String, Object>)['missing'] as String);
+        missing.add((e as Map<String, Object>)['missing'] as String ?? '');
       }
     });
 
-    return BatchGetResults(LooseListResponse(found), missing);
+    return BatchGetResults(found, missing);
   }
 
   // BATCH GET FROM PATHS
@@ -698,7 +701,7 @@ class Loose {
     resultNextPageToken =
         ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
 
-    return ListResults(LooseListResponse(docs), resultNextPageToken);
+    return ListResults(docs, resultNextPageToken);
   }
 
   // LIST FROM PATH
@@ -714,7 +717,7 @@ class Loose {
       throw LooseException(
           '${idPath.length} ids provided and $tokenCount are required.');
     }
-    var workingPath = '${collectionPath}';
+    var workingPath = '$collectionPath';
 
     for (final id in idPath) {
       workingPath = workingPath.replaceFirst(dynamicNameToken, id);
@@ -739,7 +742,7 @@ class Loose {
     _client ??= await _createClient();
 
     final uri =
-        Uri.https(authority, '${_database.rootPath}${workingPath}', params);
+        Uri.https(authority, '${_database.rootPath}$workingPath', params);
 
     final res = await _client.get(uri);
 

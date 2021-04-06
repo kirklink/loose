@@ -1,3 +1,5 @@
+import 'loose_exception.dart';
+
 class DocumentResponse<T> {
   final String _name;
   final String _createTime;
@@ -12,17 +14,22 @@ class DocumentResponse<T> {
   }
 
   const DocumentResponse._(
-      [this._entity, this._name, this._createTime, this._updateTime]);
+      this._entity, this._name, this._createTime, this._updateTime);
   // const DocumentResponse._empty(
   //     [this._entity, this._name, this._createTime, this._updateTime]);
 
-  static DocumentResponse<T> empty<T>() => DocumentResponse._();
+  const DocumentResponse._empty()
+      : _name = '',
+        _createTime = '',
+        _updateTime = '',
+        _entity = null;
 
   String get name => _name;
   String get id => _name.split('/').last;
   DateTime get createTime => DateTime.parse(_createTime);
   DateTime get updateTime => DateTime.parse(_updateTime);
   T get entity => _entity;
+
   bool get isEmpty {
     return (_entity == null) &&
         _name.isEmpty &&
@@ -31,4 +38,6 @@ class DocumentResponse<T> {
   }
 
   bool get isNotEmpty => !isEmpty;
+
+  static const DocumentResponse empty = DocumentResponse._empty();
 }

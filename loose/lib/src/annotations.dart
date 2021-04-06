@@ -17,7 +17,7 @@ class LooseDocument {
   const LooseDocument({
     this.useCase = Case.none,
     this.allowNulls = false,
-    this.useDefaultValues = false,
+    this.useDefaultValues = true,
     this.readonlyNulls = false,
     this.suppressWarnings = false,
   });
@@ -43,18 +43,18 @@ class LooseField {
   final bool readonlyNull;
   final bool ignoreIfNested;
   final bool ignoreInLists;
-  final String getter;
+  final String privateFieldGetter;
   const LooseField(
       {this.name = '',
       this.readOnly = false,
       this.ignore = false,
       this.allowNull,
       this.canQuery = true,
-      this.useDefaultValue,
-      this.readonlyNull,
-      this.ignoreIfNested,
-      this.ignoreInLists,
-      this.getter = ''});
+      this.useDefaultValue = true,
+      this.readonlyNull = false,
+      this.ignoreIfNested = false,
+      this.ignoreInLists = false,
+      this.privateFieldGetter = ''});
 }
 
 class LooseMap {

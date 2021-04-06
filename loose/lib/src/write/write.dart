@@ -96,7 +96,7 @@ class WriteCreate<T> implements Writable {
   Map<String, Object> write(Loose loose) {
     final document = _request.toFirestore(_entity);
 
-    var path = '${loose.documentRoot}${_workingPath}';
+    var path = '${loose.documentRoot}$_workingPath';
     if (_autoAssignId) {
       path = path.replaceFirst(dynamicNameToken, _generateId());
     }
@@ -137,7 +137,7 @@ class WriteUpdate<T> implements Writable {
     final updateMask = {
       'fieldPaths': _updateFields.map((e) => e.name).toList()
     };
-    final path = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}$_workingPath';
     final update = _request.toFirestore(_entity);
     update.addAll({'name': path});
     final currentDocument = {'exists': true};
@@ -165,7 +165,7 @@ class WriteDelete implements Writable {
 
   @override
   Map<String, Object> write(Loose loose) {
-    final path = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}$_workingPath';
     return {
       'delete': path,
     };
@@ -186,7 +186,7 @@ class WriteTransform implements Writable {
 
   @override
   Map<String, Object> write(Loose loose) {
-    final path = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}$_workingPath';
     final result = <String, Object>{'document': path};
     result['fieldTransforms'] = _transforms.map((e) => e.transform()).toList();
     return {'transform': result};
@@ -207,7 +207,7 @@ class WriteCounter implements Writable {
 
   @override
   Map<String, Object> write(Loose loose) {
-    final path = '${loose.documentRoot}${_workingPath}';
+    final path = '${loose.documentRoot}$_workingPath';
     return {
       'transform': {
         'document': path,

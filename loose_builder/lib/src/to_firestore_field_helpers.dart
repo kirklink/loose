@@ -42,16 +42,16 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
           if (!suppressWarnings) {
             print(
-                '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+                '[WARNING] Private field "${field.name}" does not have "privateFieldGetter" annotated and will only be visible in the same library.');
           }
         } else {
           final reader =
               ConstantReader(_checkForLooseField.firstAnnotationOf(field));
-          final getter = reader.peek('getter')?.stringValue ?? '';
+          final getter = reader.peek('privateFieldGetter')?.stringValue ?? '';
           if (getter.isEmpty) {
             if (!suppressWarnings) {
               print(
-                  '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+                  '[WARNING] Private field "${field.name}" does not have "privateFieldGetter" annotated and will only be visible in the same library.');
             }
           } else {
             getterName = getter;
@@ -61,10 +61,10 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
         if (_checkForLooseField.hasAnnotationOfExact(field)) {
           final reader =
               ConstantReader(_checkForLooseField.firstAnnotationOf(field));
-          final getter = reader.peek('getter')?.stringValue ?? '';
+          final getter = reader.peek('privateFieldGetter')?.stringValue ?? '';
           if (getter.isNotEmpty) {
             throw LooseBuilderException(
-                'Field "${field.name}" is not private and should not be annoted with "getter" without being ignored.');
+                'Field "${field.name}" is not private and should not be annoted with "gprivateFieldGetteretter" without being ignored.');
           }
         }
       }

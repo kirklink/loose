@@ -1,14 +1,12 @@
 import 'loose_response.dart';
+import '../document_response.dart';
 
-class ListResults<DocumentResponse> extends LooseResponse {
-  LooseListResponse<DocumentResponse> _documents;
-  LooseListResponse<DocumentResponse> get documents => _documents;
-  String _nextPageToken;
-  String get nextPageToken => _nextPageToken;
+class ListResults<T> extends LooseListResponse {
+  final String nextPageToken;
 
-  @override
-  int get count => _documents.count;
-
-  ListResults(this._documents, this._nextPageToken) : super();
-  ListResults.fail(LooseError error) : super.fail(error);
+  ListResults(List<DocumentResponse<T>> responses, this.nextPageToken)
+      : super(responses);
+  ListResults.fail(LooseError error)
+      : nextPageToken = '',
+        super.fail(error);
 }

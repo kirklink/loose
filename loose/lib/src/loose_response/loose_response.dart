@@ -8,43 +8,46 @@ class LooseError {
 
   bool get isNotFound => 404 == code;
 
-  const LooseError._(
-      [this.code = 0, this.internalMessage = '', this.serverMessage = '']);
   const LooseError(this.code, this.internalMessage, this.serverMessage);
 
-  static const LooseError empty = LooseError._();
+  const LooseError._empty()
+      : code = 0,
+        internalMessage = '',
+        serverMessage = '';
+
+  static const LooseError empty = LooseError._empty();
 }
 
 abstract class LooseResponse {
-  LooseError _error;
+  final LooseError _error;
 
   bool get ok => LooseError.empty == _error;
   LooseError get error => _error;
   int get count;
 
-  LooseResponse() {
-    _error = LooseError.empty;
-  }
+  LooseResponse() : _error = LooseError.empty;
 
   LooseResponse.fail(this._error);
 }
 
 class LooseEntityResponse<T> extends LooseResponse {
-  DocumentResponse<T> _response;
+  final DocumentResponse<T> _response;
 
   @override
-  int get count => ok ? 1 : 0;
+  int get count => ok && _response.isNotEmpty ? 1 : 0;
 
   LooseEntityResponse(this._response) : super();
 
-  LooseEntityResponse.fail(LooseError error) : super.fail(error);
+  LooseEntityResponse.fail(LooseError error, this._response)
+      : super.fail(error);
 
   T get entity {
-    if (!ok) {
+    final e = _response.entity;
+    if (e == null) {
       throw LooseException(
           'No document was returned. Handle error if LooseResponse.ok is not true.');
     }
-    return _response.entity;
+    return e;
   }
 
   DocumentResponse<T> get document {
@@ -57,21 +60,25 @@ class LooseEntityResponse<T> extends LooseResponse {
 }
 
 class LooseListResponse<T> extends LooseResponse {
-  List<DocumentResponse<T>> _responseList;
+  final List<DocumentResponse<T>> _responseList;
 
   @override
   int get count => ok ? _responseList.length : 0;
 
   LooseListResponse(this._responseList) : super();
 
-  LooseListResponse.fail(LooseError error) : super.fail(error);
+  LooseListResponse.fail(LooseError error)
+      : _responseList = const [],
+        super.fail(error);
 
   List<T> get entities {
-    if (!ok) {
-      throw LooseException(
-          'No documents were returned. Handle error if LooseResponse.ok is not true.');
-    }
-    return _responseList.map((DocumentResponse<T> e) => e.entity).toList();
+    return _responseList.map((DocumentResponse<T> e) {
+      final r = e.entity;
+      if (r == null) {
+        throw LooseException('Null documents were returned.');
+      }
+      return r;
+    }).toList();
   }
 
   List<DocumentResponse<T>> get documents {

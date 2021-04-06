@@ -14,10 +14,10 @@ class Query<T> {
 
   Query(this.request,
       {List<String> idPath = const [],
-      this.filter,
+      this.filter = Filter.empty,
       this.orderBy = const [],
-      this.limit,
-      this.offset})
+      this.limit = 0,
+      this.offset = 0})
       : _workingPath =
             request.document.parent?.parent?.resolvePath(idPath) ?? '';
 
@@ -27,17 +27,17 @@ class Query<T> {
         {'collectionId': request.document.parent.id}
       ]
     };
-    if (filter != null) {
+    if (filter != Filter.empty) {
       structuredQuery.addAll({'where': filter?.encode() ?? const {}});
     }
     if (orderBy.isNotEmpty) {
       structuredQuery
           .addAll({'orderBy': orderBy.map((e) => e.encode).toList()});
     }
-    if (offset != null) {
+    if (offset != 0) {
       structuredQuery.addAll({'offset': offset});
     }
-    if (limit != null) {
+    if (limit != 0) {
       structuredQuery.addAll({'limit': limit});
     }
     return {'structuredQuery': structuredQuery};

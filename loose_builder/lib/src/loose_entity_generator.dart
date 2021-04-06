@@ -11,8 +11,8 @@ import 'loose_builder_exception.dart';
 import 'uses_identifier_helper.dart' show usesIdentifier;
 import 'constants.dart' show documentIdFieldName;
 
-final _checkForResource = const TypeChecker.fromRuntime(Resource);
-final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
+// final _checkForResource = const TypeChecker.fromRuntime(Resource);
+// final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
 class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
   @override
@@ -67,7 +67,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     final allowNulls = annotation.peek('allowNulls')?.boolValue ?? false;
 
     final useDefaultValues =
-        annotation.peek('useDefaultValues')?.boolValue ?? false;
+        annotation.peek('useDefaultValues')?.boolValue ?? true;
 
     final readonlyNulls = annotation.peek('readonlyNulls')?.boolValue ?? false;
 

@@ -16,6 +16,14 @@ abstract class Filter<T> {
   static CompositeFilter composite(List<Filter> filters) {
     return CompositeFilter(filters);
   }
+
+  static const empty = EmptyFilter._();
+}
+
+class EmptyFilter implements Filter {
+  const EmptyFilter._();
+  @override
+  Map<String, Object> encode() => const {};
 }
 
 class FieldFilter<T> implements Filter {

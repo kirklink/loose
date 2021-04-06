@@ -1,7 +1,6 @@
 import 'dart:math' show Random;
 import 'document.dart';
 import 'collection.dart';
-import 'loose_exception.dart';
 
 class Counter extends Collection {
   static const String counterFieldName = 'c';
