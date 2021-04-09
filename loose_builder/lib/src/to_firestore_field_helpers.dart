@@ -17,8 +17,8 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
-    bool globalUseDefaultValues, bool suppressWarnings,
+String convertToFirestore(
+    ClassElement clazz, int recase, int globalSaveMode, bool suppressWarnings,
     {String parent = '',
     bool parentAllowNull = false,
     int nestLevel = 0,
@@ -42,16 +42,16 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
           if (!suppressWarnings) {
             print(
-                '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+                '[WARNING] Private field "${field.name}" does not have "privateFieldGetter" annotated and will only be visible in the same library.');
           }
         } else {
           final reader =
               ConstantReader(_checkForLooseField.firstAnnotationOf(field));
-          final getter = reader.peek('getter')?.stringValue ?? '';
+          final getter = reader.peek('privateFieldGetter')?.stringValue ?? '';
           if (getter.isEmpty) {
             if (!suppressWarnings) {
               print(
-                  '[WARNING] Private field "${field.name}" does not have "getter" annotated and will only be visible in the same library.');
+                  '[WARNING] Private field "${field.name}" does not have "privateFieldGetter" annotated and will only be visible in the same library.');
             }
           } else {
             getterName = getter;
@@ -61,10 +61,10 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
         if (_checkForLooseField.hasAnnotationOfExact(field)) {
           final reader =
               ConstantReader(_checkForLooseField.firstAnnotationOf(field));
-          final getter = reader.peek('getter')?.stringValue ?? '';
+          final getter = reader.peek('privateFieldGetter')?.stringValue ?? '';
           if (getter.isNotEmpty) {
             throw LooseBuilderException(
-                'Field "${field.name}" is not private and should not be annoted with "getter" without being ignored.');
+                'Field "${field.name}" is not private and should not be annoted with "privateFieldGetter" without being ignored.');
           }
         }
       }
@@ -80,8 +80,8 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
       // if (field.isPrivate) {
       //   name = name.replaceFirst('_', '');
       // }
-      var allowNull = globalAllowNull;
-      var useDefaultValue = globalUseDefaultValues;
+      var allowNull = globalSaveMode == 1;
+      var useDefaultValue = globalSaveMode == 0;
 
       if (_checkForLooseField.hasAnnotationOfExact(field)) {
         final reader =
@@ -173,33 +173,15 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
               'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
         }
 
-        var childAllowNulls = false;
-        var childUseDefaultValues = false;
         if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
-          final reader = ConstantReader(
-              _checkForLooseDocument.firstAnnotationOf(field.type.element));
-          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
-          final thisUseDefaultValue =
-              reader.peek('useDefaultValue')?.boolValue ?? false;
-          childAllowNulls = thisAllowNulls ? true : allowNull;
-          childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
           nestLevel = nestLevel + 1;
         }
 
-        if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-          final reader = ConstantReader(
-              _checkForLooseMap.firstAnnotationOf(field.type.element));
-          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
-          final thisUseDefaultValue =
-              reader.peek('useDefaultValue')?.boolValue ?? false;
-          childAllowNulls = thisAllowNulls ? true : allowNull;
-          childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
-        }
         if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
           nestLevel = nestLevel + 1;
         }
         classBuffer.write(
-            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, childAllowNulls, childUseDefaultValues, suppressWarnings, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalSaveMode, suppressWarnings, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
         // List
       } else if (field.type.isDartCoreList) {
         final elementTypes = _getGenericTypes(field.type);
@@ -239,31 +221,8 @@ String convertToFirestore(ClassElement clazz, int recase, bool globalAllowNull,
             throw LooseBuilderException(
                 'LooseDocument or LooseMap must only annotate classes. Field elements "${elementType.getDisplayString(withNullability: false)}" are not user defined classes.');
           }
-          var childAllowNulls = false;
-          var childUseDefaultValues = false;
-          if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
-            final reader = ConstantReader(
-                _checkForLooseDocument.firstAnnotationOf(field.type.element));
-            final thisAllowNulls =
-                reader.peek('allowNulls')?.boolValue ?? false;
-            final thisUseDefaultValue =
-                reader.peek('useDefaultValue')?.boolValue ?? false;
-            childAllowNulls = thisAllowNulls ? true : allowNull;
-            childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
-          }
-
-          if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-            final reader = ConstantReader(
-                _checkForLooseMap.firstAnnotationOf(field.type.element));
-            final thisAllowNulls =
-                reader.peek('allowNulls')?.boolValue ?? false;
-            final thisUseDefaultValue =
-                reader.peek('useDefaultValue')?.boolValue ?? false;
-            childAllowNulls = thisAllowNulls ? true : allowNull;
-            childUseDefaultValues = thisUseDefaultValue ? true : allowNull;
-          }
           listBuf.write(
-              "ToFs.map(${convertToFirestore(elementType.element, recase, childAllowNulls, childUseDefaultValues, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
+              "ToFs.map(${convertToFirestore(elementType.element, recase, globalSaveMode, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
         }
         listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
         classBuffer.writeln(listBuf.toString());

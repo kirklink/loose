@@ -77,7 +77,7 @@ String createDocumentFields(ClassElement element, int recase,
         final queryField = convertToQueryField(field, recase, fieldParents);
         if (queryField.isNotEmpty) {
           qFieldsBuf.writeln("final ${field.name} = ${queryField};");
-          qListBuf.writeln("${queryField},");
+          qListBuf.writeln("${field.name},");
         }
       }
       if (qFieldsBuf.isEmpty && nestLevel != 0) {

@@ -10,9 +10,10 @@ import 'package:loose/annotations.dart';
 import 'loose_builder_exception.dart';
 import 'uses_identifier_helper.dart' show usesIdentifier;
 import 'constants.dart' show documentIdFieldName;
+import 'null_mode_helper.dart';
 
-final _checkForResource = const TypeChecker.fromRuntime(Resource);
-final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
+// final _checkForResource = const TypeChecker.fromRuntime(Resource);
+// final _checkForLooseField = const TypeChecker.fromRuntime(LooseField);
 
 class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
   @override
@@ -64,17 +65,8 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
             ?.toIntValue() ??
         recase;
 
-    final allowNulls = annotation.peek('allowNulls')?.boolValue ?? false;
-
-    final useDefaultValues =
-        annotation.peek('useDefaultValues')?.boolValue ?? false;
-
-    final readonlyNulls = annotation.peek('readonlyNulls')?.boolValue ?? false;
-
-    if (allowNulls && useDefaultValues) {
-      throw LooseBuilderException(
-          'allowNull and useDefaultValues should not be used together on ${element.name}.');
-    }
+    final readMode = getNullMode(annotation, 'readMode');
+    final saveMode = getNullMode(annotation, 'saveMode');
 
     final suppressWarnings =
         annotation.peek('suppressWarning')?.boolValue ?? false;
@@ -104,8 +96,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln("final m = map['fields'] as Map<String, Object>;");
 
     // fromFields
-    classBuf.writeln(
-        convertFromFirestore(element, recase, allowNulls, readonlyNulls));
+    classBuf.writeln(convertFromFirestore(element, recase, readMode));
 
     if (usesIdentifier(element)) {
       classBuf.write(
@@ -119,8 +110,8 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     classBuf.writeln('Map<String, Object> toFirestore($className e) {');
     classBuf.write("return {'fields': ");
     // toFields
-    final converted = convertToFirestore(
-        element, recase, allowNulls, useDefaultValues, suppressWarnings);
+    final converted =
+        convertToFirestore(element, recase, saveMode, suppressWarnings);
     classBuf.writeln(converted);
     classBuf.writeln('};}');
     // !toFields

@@ -91,12 +91,12 @@ class ToFs {
           'Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (datetime != null) {
-      return {'timestampValue': datetime.toIso8601String()};
+      return {'timestampValue': datetime.toUtc().toIso8601String()};
     } else if (allowNull) {
       return _toNullValue;
     } else if (useDefaultValue) {
-      defaultValue ??= DateTime(0);
-      return {'timestampValue': defaultValue};
+      defaultValue ??= DateTime.utc(0);
+      return {'timestampValue': defaultValue.toIso8601String()};
     } else {
       throw LooseException('Null provided but not allowed in "$name".');
     }

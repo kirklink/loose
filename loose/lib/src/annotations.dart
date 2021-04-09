@@ -1,5 +1,27 @@
+import 'package:loose/annotations.dart';
+import 'loose_exception.dart';
+
 import 'case.dart';
 import 'document.dart';
+
+enum NullMode { useDefaultValues, allowNull, throwOnNull }
+
+class ConstantDateTime {
+  final int year;
+  final int month;
+  final int day;
+  final int hour;
+  final int minute;
+  final int second;
+  final int millisecond;
+  const ConstantDateTime(this.year,
+      {this.month = 0,
+      this.day = 0,
+      this.hour = 0,
+      this.minute = 0,
+      this.second = 0,
+      this.millisecond = 0});
+}
 
 /// The annotation to convert a Dart class into a Firebase document.
 ///
@@ -10,15 +32,18 @@ import 'document.dart';
 class LooseDocument {
   final Case useCase;
   // final Document document;
-  final bool allowNulls;
-  final bool useDefaultValues;
-  final bool readonlyNulls;
+  final NullMode readMode;
+  final NullMode saveMode;
+  // final bool readNulls;
+  // final bool saveDefaultValues;
+  // final bool readDefaultValues;
+  // final bool readonlyNulls;
   final bool suppressWarnings;
   const LooseDocument({
     this.useCase = Case.none,
-    this.allowNulls = false,
-    this.useDefaultValues = false,
-    this.readonlyNulls = false,
+    this.readMode = NullMode.useDefaultValues,
+    this.saveMode = NullMode.useDefaultValues,
+    // this.readonlyNulls = false,
     this.suppressWarnings = false,
   });
 }
@@ -37,36 +62,34 @@ class LooseField {
   final String name;
   final bool readOnly;
   final bool ignore;
-  final bool allowNull;
+  final NullMode readMode;
+  final NullMode saveMode;
   final bool canQuery;
-  final bool useDefaultValue;
-  final bool readonlyNull;
   final bool ignoreIfNested;
   final bool ignoreInLists;
-  final String getter;
+  final String privateFieldGetter;
+  final Object defaultValue;
   const LooseField(
       {this.name = '',
       this.readOnly = false,
       this.ignore = false,
-      this.allowNull,
+      this.saveMode,
+      this.readMode,
       this.canQuery = true,
-      this.useDefaultValue,
-      this.readonlyNull,
-      this.ignoreIfNested,
-      this.ignoreInLists,
-      this.getter = ''});
+      this.defaultValue,
+      this.ignoreIfNested = false,
+      this.ignoreInLists = false,
+      this.privateFieldGetter = ''});
 }
 
 class LooseMap {
-  final bool allowNulls;
-  final bool useDefaultValues;
-  final bool readonlyNulls;
+  final NullMode readMode;
+  final NullMode saveMode;
   final bool suppressWarnings;
 
   const LooseMap(
-      {this.allowNulls = false,
-      this.useDefaultValues = false,
-      this.readonlyNulls = false,
+      {this.readMode = NullMode.useDefaultValues,
+      this.saveMode = NullMode.useDefaultValues,
       this.suppressWarnings = false});
 }
 
