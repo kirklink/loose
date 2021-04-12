@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:loose_builder/src/null_mode_helper.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'package:loose/annotations.dart';
@@ -19,10 +20,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
 
 String convertToFirestore(
     ClassElement clazz, int recase, int globalSaveMode, bool suppressWarnings,
-    {String parent = '',
-    bool parentAllowNull = false,
-    int nestLevel = 0,
-    bool inList = false}) {
+    {String parent = '', int nestLevel = 0, bool inList = false}) {
   final classBuffer = StringBuffer();
   classBuffer.writeln('{');
 
@@ -38,6 +36,8 @@ String convertToFirestore(
     for (final field in klass.fields) {
       var name = field.name;
       var getterName = '';
+      var nullMode = globalSaveMode;
+      ConstantReader defaultValueReader;
       if (field.isPrivate) {
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
           if (!suppressWarnings) {
@@ -77,11 +77,6 @@ String convertToFirestore(
       }
 
       name = recaseFieldName(recase, name);
-      // if (field.isPrivate) {
-      //   name = name.replaceFirst('_', '');
-      // }
-      var allowNull = globalSaveMode == 1;
-      var useDefaultValue = globalSaveMode == 0;
 
       if (_checkForLooseField.hasAnnotationOfExact(field)) {
         final reader =
@@ -111,21 +106,9 @@ String convertToFirestore(
           name = rename;
         }
 
-        if ((reader.peek('allowNull')?.boolValue ?? false) &&
-            (reader.peek('useDefaultValue')?.boolValue ?? false)) {
-          throw LooseBuilderException(
-              'allowNull and useDefaultValue should not be used together on LooseField ${field.name}.');
-        }
+        nullMode = getNullMode(reader, 'saveMode');
 
-        if (reader.peek('allowNull')?.boolValue ?? false) {
-          allowNull = true;
-          useDefaultValue = false;
-        }
-
-        if (reader.peek('useDefaultValue')?.boolValue ?? false) {
-          allowNull = false;
-          useDefaultValue = true;
-        }
+        defaultValueReader = reader.peek('defaultValue');
       }
 
       var inheritedName = getterName.isNotEmpty ? getterName : name;
@@ -134,37 +117,144 @@ String convertToFirestore(
         inheritedName = '$parent?.${getterName.isNotEmpty ? getterName : name}';
         inheritedNameDisplay = '$parent.$name';
       }
-      // final inheritedNameDisplay = inheritedName.replaceAll('?', '');
 
       String mode = '';
-      if (useDefaultValue) {
+      if (nullMode == 0) {
         mode = ', useDefaultValue: true';
-      } else if (allowNull) {
+      } else if (nullMode == 1) {
         mode = ', allowNull: true';
-      } else if (parentAllowNull) {
-        mode = ', allowNull: (e?.$parent == null)';
       }
 
       if (field.type.isDartCoreString) {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          String d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.stringValue;
+            } on FormatException catch (_) {
+              final m =
+                  'Default value for $inheritedNameDisplay must be String.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: '$d'";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.string(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.string(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreInt) {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          int d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.intValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $inheritedNameDisplay must be int.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: $d";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.integer(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.integer(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreDouble) {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          double d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.doubleValue;
+            } on FormatException catch (_) {
+              final m =
+                  'Default value for $inheritedNameDisplay must be double.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: $d";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.float(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.float(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreBool) {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          bool d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.boolValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $inheritedNameDisplay must be bool.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: $d";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.boolean(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.boolean(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          DateTime d;
+          final m = 'Default value for DateTime must be a LooseDatetime';
+          if (defaultValueReader != null) {
+            try {
+              final o = defaultValueReader.objectValue;
+              if (o.type.toString() != 'LooseDatetime*') {
+                throw LooseBuilderException(m);
+              }
+              final year = o.getField('year').toIntValue();
+              final month = o.getField('month').toIntValue();
+              final day = o.getField('day').toIntValue();
+              final hour = o.getField('hour').toIntValue();
+              final min = o.getField('minute').toIntValue();
+              final sec = o.getField('second').toIntValue();
+              final msec = o.getField('millisecond').toIntValue();
+              d = DateTime.utc(year, month, day, hour, min, sec, msec);
+            } catch (_) {
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: '${d.toIso8601String()}'";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.datetime(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.datetime(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
+        var defaultValue = '';
+        if (nullMode == 0) {
+          String d;
+          final m =
+              'Default value for $inheritedNameDisplay must be Reference.';
+          if (defaultValueReader != null) {
+            try {
+              if (defaultValueReader.objectValue.type.toString() !=
+                  'Reference*') {
+                throw LooseBuilderException(m);
+              }
+              d = defaultValueReader.objectValue
+                  .getField('name')
+                  .toStringValue();
+            } catch (_) {
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            defaultValue = ", defaultValue: '$d'";
+          }
+        }
         classBuffer.writeln(
-            "...{'$name' : ToFs.reference(e?.$inheritedName, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.reference(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
         // Class
       } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
           _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
@@ -177,11 +267,21 @@ String convertToFirestore(
           nestLevel = nestLevel + 1;
         }
 
-        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
-          nestLevel = nestLevel + 1;
+        // if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+        //   nestLevel = nestLevel + 1;
+        // }
+        //
+        // var defaultValue = '';
+        if (nullMode == 0) {
+          final m = '$inheritedNameDisplay cannot have a default value.';
+          if (defaultValueReader != null) {
+            throw LooseBuilderException(m);
+          }
+
+          // defaultValue = ", defaultValue: const {}";
         }
         classBuffer.write(
-            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalSaveMode, suppressWarnings, parent: inheritedName, parentAllowNull: (allowNull || parentAllowNull), nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalSaveMode, suppressWarnings, parent: inheritedName, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
         // List
       } else if (field.type.isDartCoreList) {
         final elementTypes = _getGenericTypes(field.type);
@@ -201,19 +301,137 @@ String convertToFirestore(
         final listBuf = StringBuffer();
         listBuf.write("...{'$name' : ToFs.list(e?.$inheritedName?.map((e) => ");
         if (elementType.isDartCoreString) {
-          listBuf.write("ToFs.string(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            String d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.stringValue;
+              } on FormatException catch (_) {
+                final m =
+                    'Default value for $inheritedNameDisplay must be String.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: '$d'";
+            }
+          }
+          listBuf.write(
+              "ToFs.string(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (elementType.isDartCoreInt) {
-          listBuf.write("ToFs.integer(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            int d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.intValue;
+              } on FormatException catch (_) {
+                final m =
+                    'Default value for $inheritedNameDisplay must be int.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              "ToFs.integer(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (elementType.isDartCoreDouble) {
-          listBuf.write("ToFs.float(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            double d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.doubleValue;
+              } on FormatException catch (_) {
+                final m =
+                    'Default value for $inheritedNameDisplay must be double.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              "ToFs.float(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (elementType.isDartCoreBool) {
-          listBuf.write("ToFs.boolean(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            bool d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.boolValue;
+              } on FormatException catch (_) {
+                final m =
+                    'Default value for $inheritedNameDisplay must be bool.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              "ToFs.boolean(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (elementType.getDisplayString(withNullability: false) ==
             'DateTime') {
-          listBuf.write("ToFs.datetime(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            DateTime d;
+            final m = 'Default value for DateTime must be a LooseDatetime';
+            if (defaultValueReader != null) {
+              try {
+                final o = defaultValueReader.objectValue;
+                if (o.type.toString() != 'LooseDatetime*') {
+                  throw LooseBuilderException(m);
+                }
+                final year = o.getField('year').toIntValue();
+                final month = o.getField('month').toIntValue();
+                final day = o.getField('day').toIntValue();
+                final hour = o.getField('hour').toIntValue();
+                final min = o.getField('minute').toIntValue();
+                final sec = o.getField('second').toIntValue();
+                final msec = o.getField('millisecond').toIntValue();
+                d = DateTime.utc(year, month, day, hour, min, sec, msec);
+              } catch (_) {
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: '${d.toIso8601String()}'";
+            }
+          }
+          listBuf.write(
+              "ToFs.datetime(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (elementType.getDisplayString(withNullability: false) ==
             'Reference') {
-          listBuf.write("ToFs.reference(e, '$inheritedNameDisplay')");
+          var defaultValue = '';
+          if (nullMode == 0) {
+            String d;
+            final m =
+                'Default value for $inheritedNameDisplay must be Reference.';
+            if (defaultValueReader != null) {
+              try {
+                if (defaultValueReader.objectValue.type.toString() !=
+                    'Reference*') {
+                  throw LooseBuilderException(m);
+                }
+                d = defaultValueReader.objectValue
+                    .getField('name')
+                    .toStringValue();
+              } catch (_) {
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              defaultValue = ", defaultValue: '$d'";
+            }
+          }
+          listBuf.write(
+              "ToFs.reference(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (_checkForLooseMap
                 .hasAnnotationOfExact(elementType.element) ||
             _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {

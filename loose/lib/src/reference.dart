@@ -22,6 +22,10 @@ class Reference {
 
   const Reference.fromString(String reference) : name = reference;
 
+  Reference.fromFirestore(Map<String, Object> reference,
+      [String defaultValue = '/'])
+      : name = reference['referenceValue'] as String ?? defaultValue;
+
   bool get isRoot => name == '/';
 
   List<String> get idPath {
@@ -33,10 +37,10 @@ class Reference {
     if (split.isEmpty) {
       return const [];
     } else {
-      final l = split[1].split('/').asMap();
-      final m = Map.of(l)..removeWhere((k, v) => k.isEven);
-      final r = m.values.toList();
-      return r;
+      return (Map.of(split[1].split('/').asMap())
+            ..removeWhere((k, v) => k.isEven))
+          .values
+          .toList();
     }
   }
 

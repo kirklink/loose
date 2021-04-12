@@ -75,7 +75,7 @@ class FromFs {
   }
 
   static DateTime datetime(Map<String, Object> value,
-      {String defaultValue = '0000-01-01 00:00:00.000'}) {
+      {String defaultValue = '0000-01-01T00:00:00.000Z'}) {
     return DateTime.tryParse(value['timestampValue'] as String ?? '') ??
         DateTime.parse(defaultValue);
   }
@@ -95,15 +95,14 @@ class FromFs {
 
   static Reference reference(Map<String, Object> value,
       {String defaultValue = '/'}) {
-    final reference = (value['referenceValue'] as String) ?? defaultValue;
-    return Reference.fromString(reference);
+    return Reference.fromFirestore(value, defaultValue);
   }
 
   static Reference referenceNull(Map<String, Object> value,
       {String name = '', bool allowNull = false}) {
-    final v = value['referenceValue'] as String;
+    final v = value['referenceValue'];
     if (v != null) {
-      return Reference.fromString(v);
+      return Reference.fromFirestore(value);
     } else if (allowNull) {
       return null;
     } else {

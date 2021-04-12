@@ -6,7 +6,7 @@ import 'document.dart';
 
 enum NullMode { useDefaultValues, allowNull, throwOnNull }
 
-class ConstantDateTime {
+class LooseDatetime {
   final int year;
   final int month;
   final int day;
@@ -14,7 +14,7 @@ class ConstantDateTime {
   final int minute;
   final int second;
   final int millisecond;
-  const ConstantDateTime(this.year,
+  const LooseDatetime(this.year,
       {this.month = 0,
       this.day = 0,
       this.hour = 0,
