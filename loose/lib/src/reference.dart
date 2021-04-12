@@ -3,43 +3,57 @@ import 'package:loose/src/document_request.dart';
 import 'document_request.dart';
 import 'firestore_database.dart';
 import 'loose_exception.dart';
-import 'constants.dart';
 
 class Reference {
-  String _location;
+  final String name;
 
-  String get name => _location;
+  const Reference._(this.name);
 
-  Reference(DocumentRequest request, FirestoreDatabase database,
+  factory Reference(DocumentRequest request, FirestoreDatabase database,
       {List<String> idPath = const []}) {
-    final tokenCount =
-        dynamicNameToken.allMatches(request.document.path).length;
-    if (tokenCount != idPath.length) {
-      throw LooseException(
-          '${idPath.length} ids provided and $tokenCount are required.');
+    String workingPath;
+    try {
+      workingPath = request.document.resolvePath(idPath);
+    } on LooseException catch (_) {
+      throw LooseException('Could not resolve reference path.');
     }
-    var workingPath = '${request.document.path}';
-
-    for (final id in idPath) {
-      workingPath = workingPath.replaceFirst(dynamicNameToken, id);
-    }
-    _location = '${database.documentRoot}${workingPath}';
+    return Reference._('${database.documentRoot}$workingPath');
   }
+
+  const Reference.fromString(String reference) : name = reference;
+
+  Reference.fromFirestore(Map<String, Object> reference,
+      [String defaultValue = '/'])
+      : name = reference['referenceValue'] as String ?? defaultValue;
+
+  bool get isRoot => name == '/';
+
+  List<String> get idPath {
+    const token = '/(default)/documents/';
+    if (token.allMatches(name).length > 1) {
+      return const [];
+    }
+    final split = name.split(token);
+    if (split.isEmpty) {
+      return const [];
+    } else {
+      return (Map.of(split[1].split('/').asMap())
+            ..removeWhere((k, v) => k.isEven))
+          .values
+          .toList();
+    }
+  }
+
+  bool matchesString(String string) => name == string;
 
   @override
-  String toString() {
-    return _location;
-  }
+  String toString() => name;
 
   @override
   bool operator ==(covariant Reference other) {
-    return _location == other._location;
+    return name == other.name;
   }
 
   @override
-  int get hashCode => _location.hashCode;
-
-  Reference.fromFirestore(Map<String, Object> value) {
-    _location = value['referenceValue'] as String;
-  }
+  int get hashCode => name.hashCode;
 }

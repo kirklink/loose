@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:loose_builder/src/null_mode_helper.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'package:loose/annotations.dart';
@@ -17,8 +18,7 @@ Iterable<DartType> _getGenericTypes(DartType type) {
   return type is ParameterizedType ? type.typeArguments : const [];
 }
 
-String convertFromFirestore(ClassElement clazz, int recase,
-    bool globalAllowNulls, bool globalReadonlyNulls,
+String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
     {String parent = '', int nestLevel = 0, bool inList = false}) {
   final classBuffer = StringBuffer();
 
@@ -47,18 +47,11 @@ String convertFromFirestore(ClassElement clazz, int recase,
         "final e = ${clazz.name}${hasLooseConstructor ? '.loose' : ''}(");
   }
 
-  // final constructorStatements = <String>[];
-
   final classElements = <ClassElement>[];
   classElements.add(clazz);
   for (final superType in clazz.allSupertypes) {
     classElements.add(superType.element);
   }
-  // classElements.forEach((e) => print(e.displayName));
-  // for (final klass in classElements) {
-  //   for (final field in klass.fields) {
-  //     print('class: ${klass.type.getDisplayString(withNullability: false)}');
-  //     print('field: $field');
   final converters = <String, String>{};
 
   for (final klass in classElements) {
@@ -71,14 +64,10 @@ String convertFromFirestore(ClassElement clazz, int recase,
       }
 
       var fieldName = field.name;
-      // if (field.isPrivate) {
-      //   fieldName = fieldName.replaceFirst('_', '');
-      // }
 
       var dbname = recaseFieldName(recase, fieldName);
-
-      var allowNull = globalAllowNulls || globalReadonlyNulls;
-
+      var nullMode = globalReadMode;
+      ConstantReader defaultValueReader;
       if (_checkForLooseField.hasAnnotationOfExact(field)) {
         final reader =
             ConstantReader(_checkForLooseField.firstAnnotationOf(field));
@@ -101,9 +90,11 @@ String convertFromFirestore(ClassElement clazz, int recase,
         if (rename.isNotEmpty) {
           dbname = rename;
         }
-        final readNull = reader.peek('readonlyNull')?.boolValue;
-        allowNull = (reader.peek('allowNull')?.boolValue ?? readNull) ??
-            globalAllowNulls;
+        if (reader.peek('readMode') != null) {
+          nullMode = getNullMode(reader, 'readMode');
+        }
+
+        defaultValueReader = reader.peek('defaultValue');
       }
 
       String displayName;
@@ -114,36 +105,144 @@ String convertFromFirestore(ClassElement clazz, int recase,
       }
 
       String mode = '';
-      if (allowNull) {
+      if (nullMode == 1) {
         mode = ', allowNull: true';
       }
 
-      // final fieldBuf = StringBuffer();
-      // if (!constructorFields.contains(field.name)) {
-
-      // }
-
       var converter = '';
       if (field.type.isDartCoreString) {
-        converter =
-            "FromFs.string(m['${dbname}'], name: '${displayName}'$mode)";
+        if (nullMode == 0) {
+          String d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.stringValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $displayName must be String.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: '$d'";
+          }
+          converter = "FromFs.string(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.stringNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
       } else if (field.type.isDartCoreInt) {
-        converter =
-            "FromFs.integer(m['${dbname}'], name: '${displayName}'$mode)";
+        if (nullMode == 0) {
+          int d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.intValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $displayName must be int.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: $d";
+          }
+          converter = "FromFs.integer(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.integerNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
       } else if (field.type.isDartCoreDouble) {
-        converter = "FromFs.float(m['${dbname}'], name: '${displayName}'$mode)";
+        if (nullMode == 0) {
+          double d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.doubleValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $displayName must be double.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: $d";
+          }
+          converter = "FromFs.float(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.floatNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
       } else if (field.type.isDartCoreBool) {
-        converter =
-            "FromFs.boolean(m['${dbname}'], name: '${displayName}'$mode)";
+        if (nullMode == 0) {
+          bool d;
+          if (defaultValueReader != null) {
+            try {
+              d = defaultValueReader.boolValue;
+            } on FormatException catch (_) {
+              final m = 'Default value for $displayName must be bool.';
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: $d";
+          }
+          converter = "FromFs.boolean(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.booleanNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
-        converter =
-            "FromFs.datetime(m['${dbname}'], name: '${displayName}'$mode)";
+        if (nullMode == 0) {
+          DateTime d;
+          final m = 'Default value for DateTime must be a LooseDatetime';
+          if (defaultValueReader != null) {
+            try {
+              final o = defaultValueReader.objectValue;
+              if (o.type.toString() != 'LooseDatetime*') {
+                throw LooseBuilderException(m);
+              }
+              final year = o.getField('year').toIntValue();
+              final month = o.getField('month').toIntValue();
+              final day = o.getField('day').toIntValue();
+              final hour = o.getField('hour').toIntValue();
+              final min = o.getField('minute').toIntValue();
+              final sec = o.getField('second').toIntValue();
+              final msec = o.getField('millisecond').toIntValue();
+              d = DateTime(year, month, day, hour, min, sec, msec);
+            } catch (_) {
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: '$d'";
+          }
+          converter = "FromFs.datetime(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.datetimeNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
-        converter =
-            "FromFs.reference(m['${dbname}'], name: '${displayName}'$mode)";
-
+        if (nullMode == 0) {
+          String d;
+          final m = 'Default value for $displayName must be Reference.';
+          if (defaultValueReader != null) {
+            try {
+              if (defaultValueReader.objectValue.type.toString() !=
+                  'Reference*') {
+                throw LooseBuilderException(m);
+              }
+              d = defaultValueReader.objectValue
+                  .getField('name')
+                  .toStringValue();
+            } catch (_) {
+              throw LooseBuilderException(m);
+            }
+          }
+          if (d != null) {
+            mode = ", defaultValue: '$d'";
+          }
+          converter = "FromFs.reference(m['$dbname']$mode)";
+        } else {
+          converter =
+              "FromFs.referenceNull(m['${dbname}'], name: '${displayName}'$mode)";
+        }
         // Map
       } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
           _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
@@ -152,36 +251,31 @@ String convertFromFirestore(ClassElement clazz, int recase,
               'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
         }
 
-        var childAllowNulls = false;
-        var childReadonlyNulls = false;
         if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
-          final reader = ConstantReader(
-              _checkForLooseDocument.firstAnnotationOf(field.type.element));
-          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
-          final thisReadonlyNulls =
-              reader.peek('readonlyNulls')?.boolValue ?? false;
-          childAllowNulls = thisAllowNulls ? true : allowNull;
-          childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
           nestLevel = nestLevel + 1;
         }
 
-        if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-          final reader = ConstantReader(
-              _checkForLooseMap.firstAnnotationOf(field.type.element));
-          final thisAllowNulls = reader.peek('allowNulls')?.boolValue ?? false;
-          final thisReadonlyNulls =
-              reader.peek('readonlyNulls')?.boolValue ?? false;
-          childAllowNulls = thisAllowNulls ? true : allowNull;
-          childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
-        }
-
         final mapBuf = StringBuffer();
-        mapBuf.writeln("FromFs.map(m['${dbname}'], (m) => ");
-        mapBuf.writeln(
-            '${convertFromFirestore(field.type.element, recase, childAllowNulls, childReadonlyNulls, parent: displayName, nestLevel: nestLevel)}');
-        mapBuf.writeln(", name: '${displayName}'$mode)");
-        converter = mapBuf.toString();
-        // classBuffer.write(mapBuf.toString());
+        if (nullMode == 0) {
+          final m = '$displayName cannot have a default value.';
+          if (defaultValueReader != null) {
+            throw LooseBuilderException(m);
+          }
+
+          mode = ", defaultValue: const {}";
+
+          mapBuf.writeln("FromFs.map(m['${dbname}'], (m) => ");
+          mapBuf.writeln(
+              '${convertFromFirestore(field.type.element, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
+          mapBuf.writeln("$mode)");
+          converter = mapBuf.toString();
+        } else {
+          mapBuf.writeln("FromFs.mapNull(m['${dbname}'], (m) => ");
+          mapBuf.writeln(
+              '${convertFromFirestore(field.type.element, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
+          mapBuf.writeln(", name: '${displayName}'$mode)");
+          converter = mapBuf.toString();
+        }
 
         // List
       } else if (field.type.isDartCoreList) {
@@ -200,21 +294,143 @@ String convertFromFirestore(ClassElement clazz, int recase,
         }
         final elementType = elementTypes.first;
         final listBuf = StringBuffer();
-        listBuf.write("FromFs.list(m['${dbname}'], ");
+
+        var nullFunction = '';
+        var nullOk = '';
+        if (nullMode == 1 || nullMode == 2) {
+          nullFunction = 'Null';
+        }
+        if (nullMode == 1) {
+          nullOk = ', allowNull: true';
+        }
+        listBuf.write("FromFs.list$nullFunction(m['${dbname}'], ");
         if (elementType.isDartCoreString) {
-          listBuf.write('(e) => FromFs.string(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            String d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.stringValue;
+              } on FormatException catch (_) {
+                final m = 'Default value for $displayName must be String.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: '$d'";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.string$nullFunction(e$nullOk$elementDefault)');
         } else if (elementType.isDartCoreInt) {
-          listBuf.write('(e) => FromFs.integer(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            int d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.intValue;
+              } on FormatException catch (_) {
+                final m = 'Default value for $displayName must be int.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.integer$nullFunction(e$nullOk$elementDefault)');
         } else if (elementType.isDartCoreDouble) {
-          listBuf.write('(e) => FromFs.float(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            double d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.doubleValue;
+              } on FormatException catch (_) {
+                final m = 'Default value for $displayName must be double.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.float$nullFunction(e$nullOk$elementDefault)');
         } else if (elementType.isDartCoreBool) {
-          listBuf.write('(e) => FromFs.boolean(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            bool d;
+            if (defaultValueReader != null) {
+              try {
+                d = defaultValueReader.boolValue;
+              } on FormatException catch (_) {
+                final m = 'Default value for $displayName must be bool.';
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: $d";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.boolean$nullFunction(e$nullOk$elementDefault)');
         } else if (elementType.getDisplayString(withNullability: false) ==
             'DateTime') {
-          listBuf.write('(e) => FromFs.datetime(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            DateTime d;
+            final m = 'Default value for DateTime must be a LooseDatetime';
+            if (defaultValueReader != null) {
+              try {
+                final o = defaultValueReader.objectValue;
+                if (o.type.toString() != 'LooseDatetime*') {
+                  throw LooseBuilderException(m);
+                }
+                final year = o.getField('year').toIntValue();
+                final month = o.getField('month').toIntValue();
+                final day = o.getField('day').toIntValue();
+                final hour = o.getField('hour').toIntValue();
+                final min = o.getField('minute').toIntValue();
+                final sec = o.getField('second').toIntValue();
+                final msec = o.getField('millisecond').toIntValue();
+                d = DateTime(year, month, day, hour, min, sec, msec);
+              } catch (_) {
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: '$d'";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.datetime$nullFunction(e$nullOk$elementDefault)');
         } else if (elementType.getDisplayString(withNullability: false) ==
             'Reference') {
-          listBuf.write('(e) => FromFs.reference(e, allowNull: true)');
+          var elementDefault = '';
+          if (nullMode == 0) {
+            String d;
+            final m = 'Default value for $displayName must be Reference.';
+            if (defaultValueReader != null) {
+              try {
+                if (defaultValueReader.objectValue.type.toString() !=
+                    'Reference*') {
+                  throw LooseBuilderException(m);
+                }
+                d = defaultValueReader.objectValue
+                    .getField('name')
+                    .toStringValue();
+              } catch (_) {
+                throw LooseBuilderException(m);
+              }
+            }
+            if (d != null) {
+              elementDefault = ", defaultValue: '$d'";
+            }
+          }
+          listBuf.write(
+              '(e) => FromFs.reference$nullFunction(e$nullOk$elementDefault)');
         } else if (_checkForLooseMap
                 .hasAnnotationOfExact(elementType.element) ||
             _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
@@ -222,67 +438,47 @@ String convertFromFirestore(ClassElement clazz, int recase,
             throw LooseBuilderException(
                 'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
           }
-
-          var childAllowNulls = false;
-          var childReadonlyNulls = false;
-          if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
-            final reader = ConstantReader(
-                _checkForLooseDocument.firstAnnotationOf(field.type.element));
-            final thisAllowNulls =
-                reader.peek('allowNulls')?.boolValue ?? false;
-            final thisReadonlyNulls =
-                reader.peek('readonlyNulls')?.boolValue ?? false;
-            childAllowNulls = thisAllowNulls ? true : allowNull;
-            childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
+          if (nullMode == 0) {
+            final m = '$displayName cannot have a default value.';
+            if (defaultValueReader != null) {
+              throw LooseBuilderException(m);
+            }
           }
 
-          if (_checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
-            final reader = ConstantReader(
-                _checkForLooseMap.firstAnnotationOf(field.type.element));
-            final thisAllowNulls =
-                reader.peek('allowNulls')?.boolValue ?? false;
-            final thisReadonlyNulls =
-                reader.peek('readonlyNulls')?.boolValue ?? false;
-            childAllowNulls = thisAllowNulls ? true : allowNull;
-            childReadonlyNulls = thisReadonlyNulls ? true : allowNull;
-          }
+          mode = ", defaultValue: const {}";
 
           listBuf.write("(e) => FromFs.map(e, (m) => ");
           listBuf.writeln(
-              '${convertFromFirestore(elementType.element, recase, childAllowNulls, childReadonlyNulls, nestLevel: 0, inList: true)}');
+              '${convertFromFirestore(elementType.element, recase, globalReadMode, nestLevel: 0, inList: true)}');
+          listBuf.write("$mode)");
+        } else {
+          listBuf.write("(e) => FromFs.mapNull(e, (m) => ");
+          listBuf.writeln(
+              '${convertFromFirestore(elementType.element, recase, globalReadMode, nestLevel: 0, inList: true)}');
           listBuf.write(", name: '${displayName}'$mode)");
         }
-        listBuf.write(", name: '${displayName}'$mode)");
+        if (nullMode == 0) {
+          mode = mode = ", defaultValue: const []";
+          listBuf.write("$mode)");
+        } else {
+          listBuf.write(", name: '${displayName}'$mode)");
+        }
+
         converter = listBuf.toString();
-        // classBuffer.writeln(listBuf.toString());
       }
 
       if (constructorFields.contains(field.name)) {
         converters[field.name] = converter;
-        // constructorBuf.write('${field.name}: ');
-
       } else {
         classBuffer.write('..${field.name} = ');
         classBuffer.write(converter);
       }
     }
-
-    // constructorBuf.writeAll([converter, ',']);
   }
   constructorFields.forEach((e) {
     constructorBuf.writeln(converters[e]);
     constructorBuf.writeln(',');
   });
-
-  // clazz.constructors.forEach((c) {
-  //   if (c.isDefaultConstructor) {
-  //     c.parameters.forEach((p) {
-  //       if (p.isOptionalNamed) {
-  //         constructorBuf.write('${p.name}: ');
-  //       }
-  //     });
-  //   }
-  // });
 
   constructorBuf.writeln(')');
   final result = constructorBuf.toString() + classBuffer.toString();

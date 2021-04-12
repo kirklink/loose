@@ -83,7 +83,7 @@ class ToFs {
   }
 
   static Map<String, Object> datetime(DateTime datetime, String name,
-      {DateTime defaultValue,
+      {String defaultValue = '0000-01-01T00:00:00.000Z',
       bool useDefaultValue = false,
       bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
@@ -91,32 +91,31 @@ class ToFs {
           'Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
     if (datetime != null) {
-      return {'timestampValue': datetime.toIso8601String()};
+      return {'timestampValue': datetime.toUtc().toIso8601String()};
     } else if (allowNull) {
       return _toNullValue;
     } else if (useDefaultValue) {
-      defaultValue ??= DateTime(0);
-      return {'timestampValue': defaultValue};
+      final d = DateTime.parse(defaultValue);
+      return {'timestampValue': d.toIso8601String()};
     } else {
       throw LooseException('Null provided but not allowed in "$name".');
     }
   }
 
   static Map<String, Object> reference(Reference reference, String name,
-      {Reference defaultValue,
+      {String defaultValue = '/',
       bool useDefaultValue = false,
       bool allowNull = false}) {
     if (useDefaultValue && allowNull) {
       throw LooseException(
           'Cannot allow null and use default value for "$name". Must only use one or neither.');
     }
-    if (reference != null) {
-      return {'referenceValue': reference.toString()};
+    if (reference != null && reference.name.isNotEmpty) {
+      return {'referenceValue': reference.name};
     } else if (allowNull) {
       return _toNullValue;
     } else if (useDefaultValue) {
-      final def = defaultValue != null ? defaultValue.toString() : '';
-      return {'referenceValue': def};
+      return {'referenceValue': defaultValue};
     } else {
       throw LooseException('Null provided but not allowed in "$name".');
     }
