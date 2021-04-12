@@ -1,8 +1,4 @@
-import 'package:loose/annotations.dart';
-import 'loose_exception.dart';
-
 import 'case.dart';
-import 'document.dart';
 
 enum NullMode { useDefaultValues, allowNull, throwOnNull }
 
@@ -31,13 +27,8 @@ class LooseDatetime {
 /// [readOnly]: Throws a LooseException if tried to write to the database.
 class LooseDocument {
   final Case useCase;
-  // final Document document;
   final NullMode readMode;
   final NullMode saveMode;
-  // final bool readNulls;
-  // final bool saveDefaultValues;
-  // final bool readDefaultValues;
-  // final bool readonlyNulls;
   final bool suppressWarnings;
   const LooseDocument({
     this.useCase = Case.none,
@@ -92,7 +83,3 @@ class LooseMap {
       this.saveMode = NullMode.useDefaultValues,
       this.suppressWarnings = false});
 }
-
-// class LooseReference {
-//   const LooseReference();
-// }
