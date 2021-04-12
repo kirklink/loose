@@ -52,10 +52,10 @@ class Transaction {
 
   Transaction._(this._loose, this.id);
 
-  static Future<Transaction> newTransaction(Loose loose) async {
-    final id = await loose._beginTransaction();
-    return Transaction._(loose, id);
-  }
+  // static Future<Transaction> newTransaction(Loose loose) async {
+  //   final id = await loose._beginTransaction();
+  //   return Transaction._(loose, id);
+  // }
 
   void _checkComplete() {
     if (complete) {
@@ -91,7 +91,7 @@ class Transaction {
     } else if (res.error.isNotFound) {
       return false;
     } else {
-      return null;
+      throw LooseException('Check for document failed.');
     }
   }
 
@@ -139,31 +139,29 @@ class Transaction {
 class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
-  LooseCredentials _creds;
+  // LooseCredentials _credentials;
   auth.AutoRefreshingAuthClient _client;
 
   String get documentRoot => _database.documentRoot;
   String get databaseRoot => _database.rootPath;
   bool get hasOpenClient => _client != null;
 
-  Loose._(LooseCredentials credentials, FirestoreDatabase database) {
-    _creds = credentials;
-    _database = database;
-  }
+  Loose._();
 
   factory Loose() {
     if (_credentials == null || _database == null) {
       throw LooseException('Loose has not been initialized with Loose.init()');
     }
-    return Loose._(_credentials, _database);
+    return Loose._();
   }
 
-  static void init(LooseCredentials credentials, FirestoreDatabase database) {
+  factory Loose.init(LooseCredentials credentials, FirestoreDatabase database) {
     if (_credentials != null || _database != null) {
       throw LooseException('Loose has already been initialized.');
     }
     _credentials ??= credentials;
     _database ??= database;
+    return Loose._();
   }
 
   // static Loose _cache;
@@ -171,15 +169,15 @@ class Loose {
   static FirestoreDatabase _database;
 
   Future<auth.AutoRefreshingAuthClient> _createClient() async {
-    if (_creds.fromApplicationDefault) {
+    if (_credentials.fromApplicationDefault) {
       return auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
     } else {
       final jsonCreds = auth.ServiceAccountCredentials.fromJson({
-        'private_key_id': _creds.privateKeyId,
-        'private_key': _creds.privateKey,
-        'client_email': _creds.clientEmail,
-        'client_id': _creds.clientId,
-        'type': _creds.type
+        'private_key_id': _credentials.privateKeyId,
+        'private_key': _credentials.privateKey,
+        'client_email': _credentials.clientEmail,
+        'client_id': _credentials.clientId,
+        'type': _credentials.type
       });
       return auth.clientViaServiceAccount(jsonCreds, _SCOPES);
     }
@@ -198,7 +196,11 @@ class Loose {
   }
 
   Future<Transaction> transaction() async {
-    return Transaction.newTransaction(this);
+    final id = await _beginTransaction();
+    if (id.isEmpty) {
+      throw LooseException('Could not initiate a transaction.');
+    }
+    return Transaction._(this, id);
   }
 
   DocumentHandler<T, Q> document<T, Q extends DocumentField>(
@@ -310,7 +312,7 @@ class Loose {
     } else if (res.error.isNotFound) {
       return false;
     } else {
-      return null;
+      throw LooseException('Check for document failed.');
     }
   }
 
@@ -492,8 +494,9 @@ class Loose {
       // TODO: Handle failed transaction
       return '';
     }
-    final id =
-        (json.decode(res.body) as Map<String, Object>)['transaction'] as String;
+    final id = (json.decode(res.body) as Map<String, Object>)['transaction']
+            as String ??
+        '';
     return id;
   }
 
