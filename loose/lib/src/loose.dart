@@ -140,10 +140,10 @@ class Loose {
   final _SCOPES = const [cloudPlatformScope, datastoreScope];
 
   // LooseCredentials _credentials;
-  auth.AutoRefreshingAuthClient _client;
+  auth.AutoRefreshingAuthClient? _client;
 
-  String get documentRoot => _database.documentRoot;
-  String get databaseRoot => _database.rootPath;
+  String get documentRoot => _database!.documentRoot;
+  String get databaseRoot => _database!.rootPath;
   bool get hasOpenClient => _client != null;
 
   Loose._();
@@ -165,19 +165,19 @@ class Loose {
   }
 
   // static Loose _cache;
-  static LooseCredentials _credentials;
-  static FirestoreDatabase _database;
+  static LooseCredentials? _credentials;
+  static FirestoreDatabase? _database;
 
   Future<auth.AutoRefreshingAuthClient> _createClient() async {
-    if (_credentials.fromApplicationDefault) {
+    if (_credentials!.fromApplicationDefault) {
       return auth.clientViaApplicationDefaultCredentials(scopes: _SCOPES);
     } else {
       final jsonCreds = auth.ServiceAccountCredentials.fromJson({
-        'private_key_id': _credentials.privateKeyId,
-        'private_key': _credentials.privateKey,
-        'client_email': _credentials.clientEmail,
-        'client_id': _credentials.clientId,
-        'type': _credentials.type
+        'private_key_id': _credentials!.privateKeyId,
+        'private_key': _credentials!.privateKey,
+        'client_email': _credentials!.clientEmail,
+        'client_id': _credentials!.clientId,
+        'type': _credentials!.type
       });
       return auth.clientViaServiceAccount(jsonCreds, _SCOPES);
     }
@@ -185,12 +185,12 @@ class Loose {
 
   Reference reference(DocumentRequest request,
       {List<String> idPath = const []}) {
-    return Reference(request, _database, idPath: idPath);
+    return Reference(request, _database!, idPath: idPath);
   }
 
   void done() {
     if (_client != null) {
-      _client.close();
+      _client!.close();
       _client = null;
     }
   }
@@ -238,13 +238,13 @@ class Loose {
     }
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}$workingPath', queryParameters);
+        authority, '${_database!.rootPath}$workingPath', queryParameters);
 
     final reqBody = request.toFirestore(entity);
     if (printFields) {
       print(json.encode(reqBody));
     }
-    final res = await _client.post(uri, body: json.encode(reqBody));
+    final res = await _client!.post(uri, body: json.encode(reqBody));
 
     if (!keepClientOpen) {
       done();
@@ -254,7 +254,7 @@ class Loose {
       return _singleEntityResponseFails<T>(res.statusCode, res.body);
     }
 
-    final resBody = json.decode(res.body) as Map<String, Object>;
+    final resBody = json.decode(res.body) as Map<String, Object>?;
 
     final response = request.fromFirestore(resBody);
     return LooseEntityResponse(response);
@@ -276,8 +276,8 @@ class Loose {
     }
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}$workingPath', queryParameters);
-    final res = await _client.get(uri);
+        authority, '${_database!.rootPath}$workingPath', queryParameters);
+    final res = await _client!.get(uri);
 
     if (!keepClientOpen) {
       done();
@@ -291,7 +291,7 @@ class Loose {
       final response = DocumentResponse.empty as DocumentResponse<T>;
       return LooseEntityResponse(response);
     } else {
-      final resBody = json.decode(res.body) as Map<String, Object>;
+      final resBody = json.decode(res.body) as Map<String, Object>?;
       final response = request.fromFirestore(resBody);
       return LooseEntityResponse(response);
     }
@@ -334,14 +334,14 @@ class Loose {
     final uri = Uri(
         scheme: 'https',
         host: authority,
-        path: '${_database.rootPath}$workingPath',
+        path: '${_database!.rootPath}$workingPath',
         queryParameters: params);
     final reqBody = request.toFirestore(entity);
 
     if (printFields) {
       print(json.encode(reqBody));
     }
-    final res = await _client.patch(uri, body: json.encode(reqBody));
+    final res = await _client!.patch(uri, body: json.encode(reqBody));
 
     if (!keepClientOpen) {
       done();
@@ -351,7 +351,7 @@ class Loose {
       return _singleEntityResponseFails<T>(res.statusCode, res.body);
     }
 
-    final resBody = json.decode(res.body) as Map<String, Object>;
+    final resBody = json.decode(res.body) as Map<String, Object>?;
     final response = request.fromFirestore(resBody);
     return LooseEntityResponse(response);
   }
@@ -366,8 +366,8 @@ class Loose {
     final queryParameters = <String, String>{};
 
     final uri = Uri.https(
-        authority, '${_database.rootPath}$workingPath', queryParameters);
-    final res = await _client.delete(uri);
+        authority, '${_database!.rootPath}$workingPath', queryParameters);
+    final res = await _client!.delete(uri);
     if (!keepClientOpen) {
       done();
     }
@@ -392,9 +392,9 @@ class Loose {
 
     final path = query.location;
 
-    final uri = Uri.https(authority, '${_database.rootPath}$path:runQuery');
+    final uri = Uri.https(authority, '${_database!.rootPath}$path:runQuery');
 
-    final res = await _client.post(uri, body: reqBody);
+    final res = await _client!.post(uri, body: reqBody);
 
     if (!keepClientOpen) {
       done();
@@ -405,12 +405,13 @@ class Loose {
         for (final errorObject in resBody) {
           final error = (errorObject as Map<String, Object>)['error']
               as Map<String, Object>;
-          if ((error['status'] as String) == 'FAILED_PRECONDITION') {
+          final responseStatus = error['status'] as String? ?? '';
+          if ((responseStatus) == 'FAILED_PRECONDITION') {
             throw LooseException(
-                'SERVER ERROR [${error['status'] as String}]: ${(error['message'] as String)}');
-          } else if ((error['status'] as String) == 'INVALID_ARGUMENT') {
+                'SERVER ERROR [$responseStatus]: ${(error['message'] as String?)}');
+          } else if ((error['status'] as String?) == 'INVALID_ARGUMENT') {
             throw LooseException(
-                'SERVER ERROR [${error['status'] as String}]: ${(error['message'] as String)}');
+                'SERVER ERROR [$responseStatus]: ${(error['message'] as String?)}');
           }
         }
       }
@@ -452,8 +453,9 @@ class Loose {
 
     final docs = <DocumentResponse<T>>[];
 
-    (decoded as List).forEach((e) {
-      final doc = (e as Map<String, Object>)['document'] as Map<String, Object>;
+    decoded.forEach((e) {
+      final doc =
+          (e as Map<String, Object>)['document'] as Map<String, Object>?;
       docs.add(query.request.fromFirestore(doc));
     });
 
@@ -472,11 +474,9 @@ class Loose {
         return LooseEntityResponse.fail(
             LooseErrors.documentExists(serverResponse),
             DocumentResponse.empty as DocumentResponse<T>);
-        break;
       case 404:
         return LooseEntityResponse.fail(LooseErrors.notFound(serverResponse),
             DocumentResponse.empty as DocumentResponse<T>);
-        break;
       default:
         return LooseEntityResponse.fail(
             LooseErrors.apiCallFailed(serverResponse),
@@ -487,15 +487,15 @@ class Loose {
 //   // TRANSACTIONS
   Future<String> _beginTransaction() async {
     _client ??= await _createClient();
-    final uri = Uri.https(authority, '${_database.rootPath}:beginTransaction');
-    final res = await _client.post(uri);
+    final uri = Uri.https(authority, '${_database!.rootPath}:beginTransaction');
+    final res = await _client!.post(uri);
 
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
       return '';
     }
     final id = (json.decode(res.body) as Map<String, Object>)['transaction']
-            as String ??
+            as String? ??
         '';
     return id;
   }
@@ -512,8 +512,8 @@ class Loose {
       'transaction': transactionId,
       'writes': writes.map((e) => e.write(this)).toList()
     };
-    final uri = Uri.https(authority, '${_database.rootPath}:commit');
-    final res = await _client.post(uri, body: json.encode(body));
+    final uri = Uri.https(authority, '${_database!.rootPath}:commit');
+    final res = await _client!.post(uri, body: json.encode(body));
     if (!keepClientOpen) {
       done();
     }
@@ -525,14 +525,14 @@ class Loose {
     }
     final resBody = json.decode(res.body) as Map<String, Object>;
     return CommitResult(
-        WriteResults(writes, resBody), resBody['commitTime'] as String ?? '');
+        WriteResults(writes, resBody), resBody['commitTime'] as String? ?? '');
   }
 
   Future<bool> _rollbackTransaction(String transactionId) async {
     _client ??= await _createClient();
     final body = json.encode({'transaction': transactionId});
-    final uri = Uri.https(authority, '${_database.rootPath}:rollback');
-    final res = await _client.post(uri, body: body);
+    final uri = Uri.https(authority, '${_database!.rootPath}:rollback');
+    final res = await _client!.post(uri, body: body);
     if (res.statusCode < 200 || res.statusCode > 299) {
       // TODO: Handle failed transaction
       print(res.statusCode);
@@ -558,8 +558,8 @@ class Loose {
       }).toList()
     };
     // print(body);
-    final uri = Uri.https(authority, '${_database.rootPath}:batchWrite');
-    final res = await _client.post(uri, body: json.encode(body));
+    final uri = Uri.https(authority, '${_database!.rootPath}:batchWrite');
+    final res = await _client!.post(uri, body: json.encode(body));
     if (!keepClientOpen) {
       done();
     }
@@ -581,10 +581,10 @@ class Loose {
 
   Future<BatchGetResults> _batchGetImpl<T>(BatchGetRequest<T> batchGetRequest,
       {bool keepClientOpen = false, String transactionId = ''}) async {
-    final docs = <String, DocumentRequest<T>>{};
+    final docs = <String, DocumentRequest<T>?>{};
 
     batchGetRequest.documents.keys.forEach((key) {
-      docs['${_database.documentRoot}$key'] = batchGetRequest.documents[key];
+      docs['${_database!.documentRoot}$key'] = batchGetRequest.documents[key];
     });
 
     final decoded = await _batchGetFromPaths(docs.keys.toList(),
@@ -594,13 +594,13 @@ class Loose {
     var missing = <String>[];
 
     decoded.forEach((e) {
-      if ((e as Map<String, Object>).containsKey('found')) {
-        final doc = (e as Map<String, Object>)['found'] as Map<String, Object>;
-        final name = doc['name'] as String;
-        final request = docs[name];
+      if ((e).containsKey('found')) {
+        final doc = (e)['found'] as Map<String, Object>;
+        final name = doc['name'] as String?;
+        final request = docs[name!]!;
         found.add(request.fromFirestore(doc));
-      } else if ((e as Map<String, Object>).containsKey('missing')) {
-        missing.add((e as Map<String, Object>)['missing'] as String ?? '');
+      } else if (e.containsKey('missing')) {
+        missing.add((e)['missing'] as String? ?? '');
       }
     });
 
@@ -608,7 +608,8 @@ class Loose {
   }
 
   // BATCH GET FROM PATHS
-  Future<List> _batchGetFromPaths(List<String> documentPaths,
+  Future<List<Map<String, Object>>> _batchGetFromPaths(
+      List<String> documentPaths,
       {String transactionId = '',
       bool keepClientOpen = false,
       bool ownTransaction = false}) async {
@@ -624,9 +625,9 @@ class Loose {
 
     _client ??= await _createClient();
 
-    final uri = Uri.https(authority, '${_database.rootPath}:batchGet');
+    final uri = Uri.https(authority, '${_database!.rootPath}:batchGet');
 
-    final res = await _client.post(uri, body: json.encode(body));
+    final res = await _client!.post(uri, body: json.encode(body));
 
     if (ownTransactionId.isNotEmpty) {
       final commit = await _commitTransaction(
@@ -642,7 +643,7 @@ class Loose {
       print(res.statusCode);
       print(res.body);
     }
-    return json.decode(res.body) as List;
+    return json.decode(res.body) as List<Map<String, Object>>;
   }
 
   // READ COUNTER
@@ -661,10 +662,9 @@ class Loose {
           ownTransaction: transactionId.isEmpty,
           nextPageToken: nextPageToken);
 
-      ((shards as Map<String, Object>)['documents'] as List).forEach((e) {
-        final fields =
-            ((e as Map<String, Object>)['fields']) as Map<String, Object>;
-        final field = (fields)[Counter.counterFieldName];
+      (shards['documents'] as List<Map<String, Object>>).forEach((e) {
+        final fields = e['fields'] as Map<String, Object>;
+        final field = fields[Counter.counterFieldName]!;
         final value = int.tryParse(
             (field as Map<String, Object>)['integerValue'] as String);
         if (value == null) {
@@ -673,8 +673,7 @@ class Loose {
           result += value;
         }
       });
-      nextPageToken =
-          (shards as Map<String, Object>)['nextPageToken'] as String ?? '';
+      nextPageToken = (shards)['nextPageToken'] as String? ?? '';
     } while (nextPageToken.isNotEmpty);
 
     return result;
@@ -697,18 +696,16 @@ class Loose {
     final docs = <DocumentResponse<T>>[];
     var resultNextPageToken = '';
 
-    ((decoded as Map<String, Object>)['documents'] as List).forEach((e) {
-      final doc = e as Map<String, Object>;
+    (decoded['documents'] as List<Map<String, Object>>).forEach((doc) {
       docs.add(request.fromFirestore(doc));
     });
-    resultNextPageToken =
-        ((decoded as Map<String, Object>)['nextPageToken'] ?? '') as String;
+    resultNextPageToken = ((decoded)['nextPageToken'] ?? '') as String;
 
     return ListResults(docs, resultNextPageToken);
   }
 
   // LIST FROM PATH
-  Future<Map> _listFromPath(String collectionPath,
+  Future<Map<String, Object>> _listFromPath(String collectionPath,
       {List<String> idPath = const [],
       String transactionId = '',
       bool keepClientOpen = false,
@@ -745,9 +742,9 @@ class Loose {
     _client ??= await _createClient();
 
     final uri =
-        Uri.https(authority, '${_database.rootPath}$workingPath', params);
+        Uri.https(authority, '${_database!.rootPath}$workingPath', params);
 
-    final res = await _client.get(uri);
+    final res = await _client!.get(uri);
 
     if (ownTransactionId.isNotEmpty) {
       final commit = await _commitTransaction(
@@ -762,7 +759,7 @@ class Loose {
       print(res.statusCode);
       print(res.body);
     }
-    return json.decode(res.body) as Map;
+    return json.decode(res.body) as Map<String, Object>;
   }
 
   Future<ListResults<T>> list<T>(DocumentRequest<T> request,

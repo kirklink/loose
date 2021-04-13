@@ -3,7 +3,7 @@ import 'document.dart';
 
 class Collection implements Resource {
   @override
-  final Document parent;
+  final Document? parent;
   @override
   final String id;
 

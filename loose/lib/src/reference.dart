@@ -24,7 +24,7 @@ class Reference {
 
   Reference.fromFirestore(Map<String, Object> reference,
       [String defaultValue = '/'])
-      : name = reference['referenceValue'] as String ?? defaultValue;
+      : name = reference['referenceValue'] as String? ?? defaultValue;
 
   bool get isRoot => name == '/';
 

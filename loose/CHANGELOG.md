@@ -1,5 +1,8 @@
 # Loose Changelog
 
+## 0.1.0-nullsafety.0
+- Upgrade to null safety
+- Several API breaking changes
 
 ## 0.0.79
 - Update Write path resolution

@@ -53,13 +53,13 @@ class LooseField {
   final String name;
   final bool readOnly;
   final bool ignore;
-  final NullMode readMode;
-  final NullMode saveMode;
+  final NullMode? readMode;
+  final NullMode? saveMode;
   final bool canQuery;
   final bool ignoreIfNested;
   final bool ignoreInLists;
   final String privateFieldGetter;
-  final Object defaultValue;
+  final Object? defaultValue;
   const LooseField(
       {this.name = '',
       this.readOnly = false,

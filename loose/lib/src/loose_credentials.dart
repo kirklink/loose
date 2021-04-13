@@ -40,7 +40,7 @@ class LooseCredentials {
       throw LooseException(
           'Cached credentials with the name $name does not exist.');
     }
-    return _cache[name];
+    return _cache[name]!;
   }
 
   static final _cache = <String, LooseCredentials>{};

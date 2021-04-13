@@ -4,7 +4,7 @@ class DocumentResponse<T> {
   final String _name;
   final String _createTime;
   final String _updateTime;
-  final T _entity;
+  final T? _entity;
 
   factory DocumentResponse(T entity, Map<String, Object> firestoreObject) {
     final name = (firestoreObject['name'] ?? '') as String;
@@ -28,7 +28,7 @@ class DocumentResponse<T> {
   String get id => _name.split('/').last;
   DateTime get createTime => DateTime.parse(_createTime);
   DateTime get updateTime => DateTime.parse(_updateTime);
-  T get entity => _entity;
+  T? get entity => _entity;
 
   bool get isEmpty {
     return (_entity == null) &&
