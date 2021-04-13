@@ -50,10 +50,10 @@ String createDocumentFields(ClassElement element, int recase,
       if (usesIdentifier(element) && field.name == documentIdFieldName) {
         continue;
       }
-      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
-          _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+      if (_checkForLooseMap.hasAnnotationOfExact(field.type.element!) ||
+          _checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
         if (field.type.element is! ClassElement) {
-          throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.element.getDisplayString(withNullability: false)}');
+          throw ('LooseDocument and LooseMap must only annotate a class: ${field.type.element!.getDisplayString(withNullability: false)}');
         }
         // stash.add(field);
         final nextClassParents = <String>[];
@@ -62,12 +62,12 @@ String createDocumentFields(ClassElement element, int recase,
         final nextFieldParents = <String>[];
         nextFieldParents.addAll(fieldParents);
         nextFieldParents.add(field.name);
-        final nextPage = createDocumentFields(field.type.element, recase,
+        final nextPage = createDocumentFields(field.type.element as ClassElement, recase,
             classParents: nextClassParents,
             fieldParents: nextFieldParents,
             nestLevel: nestLevel + 1);
         if (nextPage.isNotEmpty) {
-          final childClass = field.type.element.name;
+          final childClass = field.type.element!.name;
           qFieldsBuf.writeln(
               'final ${field.name} = __\$${className}__${childClass}Fields();');
           qSpreadBuf.writeln('...${field.name}.\$all(),');
@@ -180,22 +180,22 @@ String convertToQueryField(FieldElement field, int recase,
         'Reference') {
       buf.write("(Reference e) => {'referenceValue': e.toString()}");
     } else if (_checkForLooseDocument
-            .hasAnnotationOfExact(elementType.element) ||
-        _checkForLooseMap.hasAnnotationOfExact(elementType.element)) {
+            .hasAnnotationOfExact(elementType.element!) ||
+        _checkForLooseMap.hasAnnotationOfExact(elementType.element!)) {
       buf.write("(Map e) => {'mapValue': e}");
     } else {
       return '';
     }
     buf.write(")");
     return buf.toString();
-  } else if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element) ||
-      _checkForLooseMap.hasAnnotationOfExact(field.type.element)) {
+  } else if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element!) ||
+      _checkForLooseMap.hasAnnotationOfExact(field.type.element!)) {
     final element = field.type.element;
     if (element is! ClassElement) {
       throw ('LooseMap must only annotate a class: ${field.type.getDisplayString(withNullability: false)}');
     }
     final buf = StringBuffer();
-    for (final f in (element as ClassElement).fields) {
+    for (final f in element.fields) {
       if (f.isStatic) {
         continue;
       }

@@ -37,7 +37,7 @@ String convertToFirestore(
       var name = field.name;
       var getterName = '';
       var nullMode = globalSaveMode;
-      ConstantReader defaultValueReader;
+      ConstantReader? defaultValueReader;
       if (field.isPrivate) {
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
           if (!suppressWarnings) {
@@ -128,7 +128,7 @@ String convertToFirestore(
       if (field.type.isDartCoreString) {
         var defaultValue = '';
         if (nullMode == 0) {
-          String d;
+          String? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.stringValue;
@@ -147,7 +147,7 @@ String convertToFirestore(
       } else if (field.type.isDartCoreInt) {
         var defaultValue = '';
         if (nullMode == 0) {
-          int d;
+          int? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.intValue;
@@ -165,7 +165,7 @@ String convertToFirestore(
       } else if (field.type.isDartCoreDouble) {
         var defaultValue = '';
         if (nullMode == 0) {
-          double d;
+          double? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.doubleValue;
@@ -184,7 +184,7 @@ String convertToFirestore(
       } else if (field.type.isDartCoreBool) {
         var defaultValue = '';
         if (nullMode == 0) {
-          bool d;
+          bool? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.boolValue;
@@ -203,7 +203,7 @@ String convertToFirestore(
           'DateTime') {
         var defaultValue = '';
         if (nullMode == 0) {
-          DateTime d;
+          DateTime? d;
           final m = 'Default value for DateTime must be a LooseDatetime';
           if (defaultValueReader != null) {
             try {
@@ -211,13 +211,13 @@ String convertToFirestore(
               if (o.type.toString() != 'LooseDatetime*') {
                 throw LooseBuilderException(m);
               }
-              final year = o.getField('year').toIntValue();
-              final month = o.getField('month').toIntValue();
-              final day = o.getField('day').toIntValue();
-              final hour = o.getField('hour').toIntValue();
-              final min = o.getField('minute').toIntValue();
-              final sec = o.getField('second').toIntValue();
-              final msec = o.getField('millisecond').toIntValue();
+              final year = o.getField('year')!.toIntValue()!;
+              final month = o.getField('month')!.toIntValue()!;
+              final day = o.getField('day')!.toIntValue()!;
+              final hour = o.getField('hour')!.toIntValue()!;
+              final min = o.getField('minute')!.toIntValue()!;
+              final sec = o.getField('second')!.toIntValue()!;
+              final msec = o.getField('millisecond')!.toIntValue()!;
               d = DateTime.utc(year, month, day, hour, min, sec, msec);
             } catch (_) {
               throw LooseBuilderException(m);
@@ -233,7 +233,7 @@ String convertToFirestore(
           'Reference') {
         var defaultValue = '';
         if (nullMode == 0) {
-          String d;
+          String? d;
           final m =
               'Default value for $inheritedNameDisplay must be Reference.';
           if (defaultValueReader != null) {
@@ -243,7 +243,7 @@ String convertToFirestore(
                 throw LooseBuilderException(m);
               }
               d = defaultValueReader.objectValue
-                  .getField('name')
+                  .getField('name')!
                   .toStringValue();
             } catch (_) {
               throw LooseBuilderException(m);
@@ -256,14 +256,14 @@ String convertToFirestore(
         classBuffer.writeln(
             "...{'$name' : ToFs.reference(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
         // Class
-      } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
-          _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+      } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element!) ||
+          _checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
         if (field.type.element is! ClassElement) {
           throw LooseBuilderException(
               'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
         }
 
-        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
           nestLevel = nestLevel + 1;
         }
 
@@ -281,7 +281,7 @@ String convertToFirestore(
           // defaultValue = ", defaultValue: const {}";
         }
         classBuffer.write(
-            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element, recase, globalSaveMode, suppressWarnings, parent: inheritedName, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element as ClassElement, recase, globalSaveMode, suppressWarnings, parent: inheritedName, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
         // List
       } else if (field.type.isDartCoreList) {
         final elementTypes = _getGenericTypes(field.type);
@@ -303,7 +303,7 @@ String convertToFirestore(
         if (elementType.isDartCoreString) {
           var defaultValue = '';
           if (nullMode == 0) {
-            String d;
+            String? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.stringValue;
@@ -322,7 +322,7 @@ String convertToFirestore(
         } else if (elementType.isDartCoreInt) {
           var defaultValue = '';
           if (nullMode == 0) {
-            int d;
+            int? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.intValue;
@@ -341,7 +341,7 @@ String convertToFirestore(
         } else if (elementType.isDartCoreDouble) {
           var defaultValue = '';
           if (nullMode == 0) {
-            double d;
+            double? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.doubleValue;
@@ -360,7 +360,7 @@ String convertToFirestore(
         } else if (elementType.isDartCoreBool) {
           var defaultValue = '';
           if (nullMode == 0) {
-            bool d;
+            bool? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.boolValue;
@@ -380,7 +380,7 @@ String convertToFirestore(
             'DateTime') {
           var defaultValue = '';
           if (nullMode == 0) {
-            DateTime d;
+            DateTime? d;
             final m = 'Default value for DateTime must be a LooseDatetime';
             if (defaultValueReader != null) {
               try {
@@ -388,13 +388,13 @@ String convertToFirestore(
                 if (o.type.toString() != 'LooseDatetime*') {
                   throw LooseBuilderException(m);
                 }
-                final year = o.getField('year').toIntValue();
-                final month = o.getField('month').toIntValue();
-                final day = o.getField('day').toIntValue();
-                final hour = o.getField('hour').toIntValue();
-                final min = o.getField('minute').toIntValue();
-                final sec = o.getField('second').toIntValue();
-                final msec = o.getField('millisecond').toIntValue();
+                final year = o.getField('year')!.toIntValue()!;
+                final month = o.getField('month')!.toIntValue()!;
+                final day = o.getField('day')!.toIntValue()!;
+                final hour = o.getField('hour')!.toIntValue()!;
+                final min = o.getField('minute')!.toIntValue()!;
+                final sec = o.getField('second')!.toIntValue()!;
+                final msec = o.getField('millisecond')!.toIntValue()!;
                 d = DateTime.utc(year, month, day, hour, min, sec, msec);
               } catch (_) {
                 throw LooseBuilderException(m);
@@ -410,7 +410,7 @@ String convertToFirestore(
             'Reference') {
           var defaultValue = '';
           if (nullMode == 0) {
-            String d;
+            String? d;
             final m =
                 'Default value for $inheritedNameDisplay must be Reference.';
             if (defaultValueReader != null) {
@@ -420,7 +420,7 @@ String convertToFirestore(
                   throw LooseBuilderException(m);
                 }
                 d = defaultValueReader.objectValue
-                    .getField('name')
+                    .getField('name')!
                     .toStringValue();
               } catch (_) {
                 throw LooseBuilderException(m);
@@ -433,14 +433,14 @@ String convertToFirestore(
           listBuf.write(
               "ToFs.reference(e, '$inheritedNameDisplay'$mode$defaultValue)");
         } else if (_checkForLooseMap
-                .hasAnnotationOfExact(elementType.element) ||
-            _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
+                .hasAnnotationOfExact(elementType.element!) ||
+            _checkForLooseDocument.hasAnnotationOfExact(elementType.element!)) {
           if (elementType.element is! ClassElement) {
             throw LooseBuilderException(
                 'LooseDocument or LooseMap must only annotate classes. Field elements "${elementType.getDisplayString(withNullability: false)}" are not user defined classes.');
           }
           listBuf.write(
-              "ToFs.map(${convertToFirestore(elementType.element, recase, globalSaveMode, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
+              "ToFs.map(${convertToFirestore(elementType.element as ClassElement, recase, globalSaveMode, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
         }
         listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
         classBuffer.writeln(listBuf.toString());

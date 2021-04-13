@@ -67,7 +67,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
 
       var dbname = recaseFieldName(recase, fieldName);
       var nullMode = globalReadMode;
-      ConstantReader defaultValueReader;
+      ConstantReader? defaultValueReader;
       if (_checkForLooseField.hasAnnotationOfExact(field)) {
         final reader =
             ConstantReader(_checkForLooseField.firstAnnotationOf(field));
@@ -112,7 +112,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
       var converter = '';
       if (field.type.isDartCoreString) {
         if (nullMode == 0) {
-          String d;
+          String? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.stringValue;
@@ -131,7 +131,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         }
       } else if (field.type.isDartCoreInt) {
         if (nullMode == 0) {
-          int d;
+          int? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.intValue;
@@ -150,7 +150,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         }
       } else if (field.type.isDartCoreDouble) {
         if (nullMode == 0) {
-          double d;
+          double? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.doubleValue;
@@ -169,7 +169,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         }
       } else if (field.type.isDartCoreBool) {
         if (nullMode == 0) {
-          bool d;
+          bool? d;
           if (defaultValueReader != null) {
             try {
               d = defaultValueReader.boolValue;
@@ -189,7 +189,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
         if (nullMode == 0) {
-          DateTime d;
+          DateTime? d;
           final m = 'Default value for DateTime must be a LooseDatetime';
           if (defaultValueReader != null) {
             try {
@@ -197,13 +197,13 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
               if (o.type.toString() != 'LooseDatetime*') {
                 throw LooseBuilderException(m);
               }
-              final year = o.getField('year').toIntValue();
-              final month = o.getField('month').toIntValue();
-              final day = o.getField('day').toIntValue();
-              final hour = o.getField('hour').toIntValue();
-              final min = o.getField('minute').toIntValue();
-              final sec = o.getField('second').toIntValue();
-              final msec = o.getField('millisecond').toIntValue();
+              final year = o.getField('year')!.toIntValue()!;
+              final month = o.getField('month')!.toIntValue()!;
+              final day = o.getField('day')!.toIntValue()!;
+              final hour = o.getField('hour')!.toIntValue()!;
+              final min = o.getField('minute')!.toIntValue()!;
+              final sec = o.getField('second')!.toIntValue()!;
+              final msec = o.getField('millisecond')!.toIntValue()!;
               d = DateTime(year, month, day, hour, min, sec, msec);
             } catch (_) {
               throw LooseBuilderException(m);
@@ -220,7 +220,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
         if (nullMode == 0) {
-          String d;
+          String? d;
           final m = 'Default value for $displayName must be Reference.';
           if (defaultValueReader != null) {
             try {
@@ -229,7 +229,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
                 throw LooseBuilderException(m);
               }
               d = defaultValueReader.objectValue
-                  .getField('name')
+                  .getField('name')!
                   .toStringValue();
             } catch (_) {
               throw LooseBuilderException(m);
@@ -244,14 +244,14 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
               "FromFs.referenceNull(m['${dbname}'], name: '${displayName}'$mode)";
         }
         // Map
-      } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element) ||
-          _checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+      } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element!) ||
+          _checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
         if (field.type.element is! ClassElement) {
           throw LooseBuilderException(
               'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
         }
 
-        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element)) {
+        if (_checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
           nestLevel = nestLevel + 1;
         }
 
@@ -266,13 +266,13 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
 
           mapBuf.writeln("FromFs.map(m['${dbname}'], (m) => ");
           mapBuf.writeln(
-              '${convertFromFirestore(field.type.element, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
+              '${convertFromFirestore(field.type.element as ClassElement, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
           mapBuf.writeln("$mode)");
           converter = mapBuf.toString();
         } else {
           mapBuf.writeln("FromFs.mapNull(m['${dbname}'], (m) => ");
           mapBuf.writeln(
-              '${convertFromFirestore(field.type.element, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
+              '${convertFromFirestore(field.type.element as ClassElement, recase, globalReadMode, parent: displayName, nestLevel: nestLevel)}');
           mapBuf.writeln(", name: '${displayName}'$mode)");
           converter = mapBuf.toString();
         }
@@ -307,7 +307,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         if (elementType.isDartCoreString) {
           var elementDefault = '';
           if (nullMode == 0) {
-            String d;
+            String? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.stringValue;
@@ -325,7 +325,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         } else if (elementType.isDartCoreInt) {
           var elementDefault = '';
           if (nullMode == 0) {
-            int d;
+            int? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.intValue;
@@ -343,7 +343,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         } else if (elementType.isDartCoreDouble) {
           var elementDefault = '';
           if (nullMode == 0) {
-            double d;
+            double? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.doubleValue;
@@ -361,7 +361,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
         } else if (elementType.isDartCoreBool) {
           var elementDefault = '';
           if (nullMode == 0) {
-            bool d;
+            bool? d;
             if (defaultValueReader != null) {
               try {
                 d = defaultValueReader.boolValue;
@@ -380,7 +380,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
             'DateTime') {
           var elementDefault = '';
           if (nullMode == 0) {
-            DateTime d;
+            DateTime? d;
             final m = 'Default value for DateTime must be a LooseDatetime';
             if (defaultValueReader != null) {
               try {
@@ -388,13 +388,13 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
                 if (o.type.toString() != 'LooseDatetime*') {
                   throw LooseBuilderException(m);
                 }
-                final year = o.getField('year').toIntValue();
-                final month = o.getField('month').toIntValue();
-                final day = o.getField('day').toIntValue();
-                final hour = o.getField('hour').toIntValue();
-                final min = o.getField('minute').toIntValue();
-                final sec = o.getField('second').toIntValue();
-                final msec = o.getField('millisecond').toIntValue();
+                final year = o.getField('year')!.toIntValue()!;
+                final month = o.getField('month')!.toIntValue()!;
+                final day = o.getField('day')!.toIntValue()!;
+                final hour = o.getField('hour')!.toIntValue()!;
+                final min = o.getField('minute')!.toIntValue()!;
+                final sec = o.getField('second')!.toIntValue()!;
+                final msec = o.getField('millisecond')!.toIntValue()!;
                 d = DateTime(year, month, day, hour, min, sec, msec);
               } catch (_) {
                 throw LooseBuilderException(m);
@@ -410,7 +410,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
             'Reference') {
           var elementDefault = '';
           if (nullMode == 0) {
-            String d;
+            String? d;
             final m = 'Default value for $displayName must be Reference.';
             if (defaultValueReader != null) {
               try {
@@ -419,7 +419,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
                   throw LooseBuilderException(m);
                 }
                 d = defaultValueReader.objectValue
-                    .getField('name')
+                    .getField('name')!
                     .toStringValue();
               } catch (_) {
                 throw LooseBuilderException(m);
@@ -432,8 +432,8 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
           listBuf.write(
               '(e) => FromFs.reference$nullFunction(e$nullOk$elementDefault)');
         } else if (_checkForLooseMap
-                .hasAnnotationOfExact(elementType.element) ||
-            _checkForLooseDocument.hasAnnotationOfExact(elementType.element)) {
+                .hasAnnotationOfExact(elementType.element!) ||
+            _checkForLooseDocument.hasAnnotationOfExact(elementType.element!)) {
           if (elementType.element is! ClassElement) {
             throw LooseBuilderException(
                 'LooseDocument or LooseMap must only annotate classes. Field "${field.name}" is not a class.');
@@ -449,12 +449,12 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
 
           listBuf.write("(e) => FromFs.map(e, (m) => ");
           listBuf.writeln(
-              '${convertFromFirestore(elementType.element, recase, globalReadMode, nestLevel: 0, inList: true)}');
+              '${convertFromFirestore(elementType.element as ClassElement, recase, globalReadMode, nestLevel: 0, inList: true)}');
           listBuf.write("$mode)");
         } else {
           listBuf.write("(e) => FromFs.mapNull(e, (m) => ");
           listBuf.writeln(
-              '${convertFromFirestore(elementType.element, recase, globalReadMode, nestLevel: 0, inList: true)}');
+              '${convertFromFirestore(elementType.element as ClassElement, recase, globalReadMode, nestLevel: 0, inList: true)}');
           listBuf.write(", name: '${displayName}'$mode)");
         }
         if (nullMode == 0) {

@@ -23,7 +23,7 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
       throw ('LooseDocument must only annotate a class.');
     }
 
-    var $loose = (element as ClassElement).getField('\$loose');
+    var $loose = element.getField('\$loose');
     if ($loose == null || !$loose.isStatic || !$loose.isFinal) {
       var buf = StringBuffer();
       var documentClass = "${element.name}Document";
