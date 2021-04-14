@@ -210,7 +210,7 @@ String convertToFirestore(
             try {
               final o = defaultValueReader.objectValue;
 
-              if (o.type.toString() != 'LooseDatetime*') {
+              if (o.type.toString() != 'LooseDatetime') {
                 throw LooseBuilderException(m);
               }
               final year = o.getField('year')!.toIntValue()!;
@@ -388,7 +388,7 @@ String convertToFirestore(
             if (defaultValueReader != null) {
               try {
                 final o = defaultValueReader.objectValue;
-                if (o.type.toString() != 'LooseDatetime*') {
+                if (o.type.toString() != 'LooseDatetime') {
                   throw LooseBuilderException(m);
                 }
                 final year = o.getField('year')!.toIntValue()!;

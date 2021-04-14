@@ -108,7 +108,6 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
       if (nullMode == 1) {
         mode = ', allowNull: true';
       }
-      
 
       var converter = '';
       if (field.type.isDartCoreString) {
@@ -195,7 +194,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
           if (defaultValueReader != null) {
             try {
               final o = defaultValueReader.objectValue;
-              if (o.type.toString() != 'LooseDatetime*') {
+              if (o.type.toString() != 'LooseDatetime') {
                 throw LooseBuilderException(m);
               }
               final year = o.getField('year')!.toIntValue()!;
@@ -386,7 +385,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
             if (defaultValueReader != null) {
               try {
                 final o = defaultValueReader.objectValue;
-                if (o.type.toString() != 'LooseDatetime*') {
+                if (o.type.toString() != 'LooseDatetime') {
                   throw LooseBuilderException(m);
                 }
                 final year = o.getField('year')!.toIntValue()!;
