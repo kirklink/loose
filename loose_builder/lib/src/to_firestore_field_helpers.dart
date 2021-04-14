@@ -1,6 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:loose_builder/src/null_mode_helper.dart';
+import 'package:loose_builder/src/default_datetime_helper.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'package:loose/annotations.dart';
@@ -205,25 +206,8 @@ String convertToFirestore(
         var defaultValue = '';
         if (nullMode == 0) {
           DateTime? d;
-          final m = 'Default value for DateTime must be a LooseDatetime';
           if (defaultValueReader != null) {
-            try {
-              final o = defaultValueReader.objectValue;
-
-              if (o.type.toString() != 'LooseDatetime') {
-                throw LooseBuilderException(m);
-              }
-              final year = o.getField('year')!.toIntValue()!;
-              final month = o.getField('month')!.toIntValue()!;
-              final day = o.getField('day')!.toIntValue()!;
-              final hour = o.getField('hour')!.toIntValue()!;
-              final min = o.getField('minute')!.toIntValue()!;
-              final sec = o.getField('second')!.toIntValue()!;
-              final msec = o.getField('millisecond')!.toIntValue()!;
-              d = DateTime.utc(year, month, day, hour, min, sec, msec);
-            } catch (_) {
-              throw LooseBuilderException(m);
-            }
+            d = dateTimeConverter(defaultValueReader);
           }
           if (d != null) {
             defaultValue = ", defaultValue: '${d.toIso8601String()}'";
@@ -384,24 +368,8 @@ String convertToFirestore(
           var defaultValue = '';
           if (nullMode == 0) {
             DateTime? d;
-            final m = 'Default value for DateTime must be a LooseDatetime';
             if (defaultValueReader != null) {
-              try {
-                final o = defaultValueReader.objectValue;
-                if (o.type.toString() != 'LooseDatetime') {
-                  throw LooseBuilderException(m);
-                }
-                final year = o.getField('year')!.toIntValue()!;
-                final month = o.getField('month')!.toIntValue()!;
-                final day = o.getField('day')!.toIntValue()!;
-                final hour = o.getField('hour')!.toIntValue()!;
-                final min = o.getField('minute')!.toIntValue()!;
-                final sec = o.getField('second')!.toIntValue()!;
-                final msec = o.getField('millisecond')!.toIntValue()!;
-                d = DateTime.utc(year, month, day, hour, min, sec, msec);
-              } catch (_) {
-                throw LooseBuilderException(m);
-              }
+              d = dateTimeConverter(defaultValueReader);
             }
             if (d != null) {
               defaultValue = ", defaultValue: '${d.toIso8601String()}'";

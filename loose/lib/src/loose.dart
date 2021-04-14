@@ -254,9 +254,10 @@ class Loose {
       return _singleEntityResponseFails<T>(res.statusCode, res.body);
     }
 
-    final resBody = json.decode(res.body) as Map<String, Object>?;
+    print(res.body);
+    final body = json.decode(res.body) as Map<String, dynamic>;
 
-    final response = request.fromFirestore(resBody ?? const {});
+    final response = request.fromFirestore(body);
     return LooseEntityResponse(response);
   }
 
@@ -480,7 +481,7 @@ class Loose {
       default:
         return LooseEntityResponse.fail(
             LooseErrors.apiCallFailed(serverResponse),
-            DocumentResponse.empty as DocumentResponse<T>);
+            DocumentResponse.empty<T>());
     }
   }
 

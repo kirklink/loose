@@ -92,8 +92,8 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
         'final _\$${className}Fields fields = _\$${className}Fields();');
     classBuf.writeln('@override');
     classBuf.writeln(
-        'DocumentResponse<$className> fromFirestore(Map<String, Object> map) {');
-    classBuf.writeln("final m = map['fields'] as Map<String, Object>;");
+        'DocumentResponse<$className> fromFirestore(Map<String, dynamic> map) {');
+    classBuf.writeln("final m = map['fields'] as Map<String, dynamic>;");
 
     // fromFields
     classBuf.writeln(convertFromFirestore(element, recase, readMode));

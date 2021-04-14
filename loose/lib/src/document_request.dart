@@ -7,5 +7,5 @@ abstract class DocumentRequest<T> {
   DocumentRequest();
 
   Map<String, Object> toFirestore(T entity);
-  DocumentResponse<T> fromFirestore(Map<String, Object> m);
+  DocumentResponse<T> fromFirestore(Map<String, dynamic> m);
 }

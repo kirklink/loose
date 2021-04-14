@@ -67,7 +67,7 @@ class ToFs {
   }
 
   static Map<String, Object> datetime(DateTime? datetime, String name,
-      {String defaultValue = '0000-01-01T00:00:00.000Z',
+      {String defaultValue = '0001-01-01T00:00:00.000Z',
       bool useDefaultValue = false,
       bool allowNull = false}) {
     if (datetime != null) {
@@ -76,7 +76,11 @@ class ToFs {
       return _toNullValue;
     } else if (useDefaultValue) {
       final d = DateTime.parse(defaultValue);
-      return {'timestampValue': d.toIso8601String()};
+      if (d == DateTime.utc(0)) {
+        return {'timestampValue': DateTime.now().toUtc().toIso8601String()};
+      } else {
+        return {'timestampValue': d.toIso8601String()};
+      }
     } else {
       throw LooseException('Null provided but not allowed in "$name".');
     }

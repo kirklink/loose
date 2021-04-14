@@ -24,7 +24,7 @@ class Reference {
 
   const Reference.empty() : name = '';
 
-  Reference.fromFirestore(Map<String, Object> reference,
+  Reference.fromFirestore(dynamic reference,
       [String defaultValue = ''])
       : name = reference['referenceValue'] as String? ?? defaultValue;
 

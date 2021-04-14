@@ -6,7 +6,7 @@ class DocumentResponse<T> {
   final String _updateTime;
   final T? _entity;
 
-  factory DocumentResponse(T entity, Map<String, Object> firestoreObject) {
+  factory DocumentResponse(T entity, Map<String, dynamic> firestoreObject) {
     final name = (firestoreObject['name'] ?? '') as String;
     final createTime = (firestoreObject['createTime'] ?? '') as String;
     final updateTime = (firestoreObject['updateTime'] ?? '') as String;
@@ -24,6 +24,8 @@ class DocumentResponse<T> {
         _updateTime = '',
         _entity = null;
 
+  static DocumentResponse<T> empty<T>() => DocumentResponse._empty();
+
   String get name => _name;
   String get id => _name.split('/').last;
   DateTime get createTime => DateTime.parse(_createTime);
@@ -39,5 +41,5 @@ class DocumentResponse<T> {
 
   bool get isNotEmpty => !isEmpty;
 
-  static const DocumentResponse empty = DocumentResponse._empty();
+  // static const DocumentResponse empty = DocumentResponse._empty();
 }

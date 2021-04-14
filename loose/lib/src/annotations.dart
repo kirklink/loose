@@ -10,13 +10,24 @@ class LooseDatetime {
   final int minute;
   final int second;
   final int millisecond;
+  final bool now;
   const LooseDatetime(this.year,
       {this.month = 0,
       this.day = 0,
       this.hour = 0,
       this.minute = 0,
       this.second = 0,
-      this.millisecond = 0});
+      this.millisecond = 0,
+      this.now = false});
+  const LooseDatetime.now()
+      : year = 0,
+        month = 0,
+        day = 0,
+        hour = 0,
+        minute = 0,
+        second = 0,
+        millisecond = 0,
+        now = true;
 }
 
 /// The annotation to convert a Dart class into a Firebase document.
