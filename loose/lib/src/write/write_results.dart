@@ -6,9 +6,8 @@ class WriteResult {
   final Writable write;
 
   String get label => write.label;
-  DateTime get updateTime =>
-      DateTime.tryParse(_updateTime ?? '') ?? DateTime(0);
-  bool get ok => updateTime != null;
+  DateTime get updateTime => DateTime.tryParse(_updateTime) ?? DateTime.utc(0);
+  bool get ok => updateTime != DateTime.utc(0);
 
   const WriteResult(this._updateTime, this.status, this.write);
 }

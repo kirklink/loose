@@ -37,31 +37,31 @@ class LooseDocumentGenerator extends GeneratorForAnnotation<LooseDocument> {
     var recase = annotation
             .peek('useCase')
             ?.objectValue
-            ?.getField('none')
+            .getField('none')
             ?.toIntValue() ??
         0;
     recase = annotation
             .peek('useCase')
             ?.objectValue
-            ?.getField('camelCase')
+            .getField('camelCase')
             ?.toIntValue() ??
         recase;
     recase = annotation
             .peek('useCase')
             ?.objectValue
-            ?.getField('snakeCase')
+            .getField('snakeCase')
             ?.toIntValue() ??
         recase;
     recase = annotation
             .peek('useCase')
             ?.objectValue
-            ?.getField('pascalCase')
+            .getField('pascalCase')
             ?.toIntValue() ??
         recase;
     recase = annotation
             .peek('useCase')
             ?.objectValue
-            ?.getField('kebabCase')
+            .getField('kebabCase')
             ?.toIntValue() ??
         recase;
 

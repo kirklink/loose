@@ -256,7 +256,7 @@ class Loose {
 
     final resBody = json.decode(res.body) as Map<String, Object>?;
 
-    final response = request.fromFirestore(resBody);
+    final response = request.fromFirestore(resBody ?? const {});
     return LooseEntityResponse(response);
   }
 
@@ -292,7 +292,7 @@ class Loose {
       return LooseEntityResponse(response);
     } else {
       final resBody = json.decode(res.body) as Map<String, Object>?;
-      final response = request.fromFirestore(resBody);
+      final response = request.fromFirestore(resBody ?? const {});
       return LooseEntityResponse(response);
     }
   }
@@ -352,7 +352,7 @@ class Loose {
     }
 
     final resBody = json.decode(res.body) as Map<String, Object>?;
-    final response = request.fromFirestore(resBody);
+    final response = request.fromFirestore(resBody ?? const {});
     return LooseEntityResponse(response);
   }
 
@@ -456,7 +456,7 @@ class Loose {
     decoded.forEach((e) {
       final doc =
           (e as Map<String, Object>)['document'] as Map<String, Object>?;
-      docs.add(query.request.fromFirestore(doc));
+      docs.add(query.request.fromFirestore(doc ?? const {}));
     });
 
     return LooseListResponse(docs);

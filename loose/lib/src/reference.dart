@@ -22,11 +22,13 @@ class Reference {
 
   const Reference.fromString(String reference) : name = reference;
 
+  const Reference.empty() : name = '';
+
   Reference.fromFirestore(Map<String, Object> reference,
-      [String defaultValue = '/'])
+      [String defaultValue = ''])
       : name = reference['referenceValue'] as String? ?? defaultValue;
 
-  bool get isRoot => name == '/';
+  bool get isEmpty => name.isEmpty;
 
   List<String> get idPath {
     const token = '/(default)/documents/';

@@ -4,19 +4,16 @@ int getNullMode(ConstantReader reader, String fieldName) {
   var mode = reader
           .peek(fieldName)
           ?.objectValue
-          ?.getField('useDefaultValues')
+          .getField('useDefaultValues')
           ?.toIntValue() ??
       0;
+  mode =
+      reader.peek(fieldName)?.objectValue.getField('allowNull')?.toIntValue() ??
+          mode;
   mode = reader
           .peek(fieldName)
           ?.objectValue
-          ?.getField('allowNull')
-          ?.toIntValue() ??
-      mode;
-  mode = reader
-          .peek(fieldName)
-          ?.objectValue
-          ?.getField('throwOnNull')
+          .getField('throwOnNull')
           ?.toIntValue() ??
       mode;
   return mode;

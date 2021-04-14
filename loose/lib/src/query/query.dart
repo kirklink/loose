@@ -19,7 +19,7 @@ class Query<T> {
       this.limit = 0,
       this.offset = 0})
       : _workingPath =
-            request.document.parent?.parent?.resolvePath(idPath) ?? '';
+            request.document.parent.parent?.resolvePath(idPath) ?? '';
 
   Map<String, Object> encode() {
     final structuredQuery = <String, Object>{
@@ -28,7 +28,7 @@ class Query<T> {
       ]
     };
     if (filter != Filter.empty) {
-      structuredQuery.addAll({'where': filter?.encode() ?? const {}});
+      structuredQuery.addAll({'where': filter.encode()});
     }
     if (orderBy.isNotEmpty) {
       structuredQuery

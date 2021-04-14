@@ -108,6 +108,7 @@ String convertFromFirestore(ClassElement clazz, int recase, int globalReadMode,
       if (nullMode == 1) {
         mode = ', allowNull: true';
       }
+      
 
       var converter = '';
       if (field.type.isDartCoreString) {

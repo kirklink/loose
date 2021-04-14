@@ -37,6 +37,7 @@ String convertToFirestore(
       var name = field.name;
       var getterName = '';
       var nullMode = globalSaveMode;
+      final nullSuffix = field.type.nullabilitySuffix.index == 0 ? '?' : '';
       ConstantReader? defaultValueReader;
       if (field.isPrivate) {
         if (!_checkForLooseField.hasAnnotationOfExact(field)) {
@@ -114,7 +115,7 @@ String convertToFirestore(
       var inheritedName = getterName.isNotEmpty ? getterName : name;
       var inheritedNameDisplay = field.name;
       if (parent.isNotEmpty) {
-        inheritedName = '$parent?.${getterName.isNotEmpty ? getterName : name}';
+        inheritedName = '$parent.${getterName.isNotEmpty ? getterName : name}';
         inheritedNameDisplay = '$parent.$name';
       }
 
@@ -143,7 +144,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.string(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.string(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreInt) {
         var defaultValue = '';
         if (nullMode == 0) {
@@ -161,7 +162,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.integer(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.integer(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreDouble) {
         var defaultValue = '';
         if (nullMode == 0) {
@@ -180,7 +181,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.float(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.float(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.isDartCoreBool) {
         var defaultValue = '';
         if (nullMode == 0) {
@@ -198,7 +199,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.boolean(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.boolean(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.getDisplayString(withNullability: false) ==
           'DateTime') {
         var defaultValue = '';
@@ -208,6 +209,7 @@ String convertToFirestore(
           if (defaultValueReader != null) {
             try {
               final o = defaultValueReader.objectValue;
+
               if (o.type.toString() != 'LooseDatetime*') {
                 throw LooseBuilderException(m);
               }
@@ -228,7 +230,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.datetime(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.datetime(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
       } else if (field.type.getDisplayString(withNullability: false) ==
           'Reference') {
         var defaultValue = '';
@@ -254,7 +256,7 @@ String convertToFirestore(
           }
         }
         classBuffer.writeln(
-            "...{'$name' : ToFs.reference(e?.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
+            "...{'$name' : ToFs.reference(e.$inheritedName, '$inheritedNameDisplay'$mode$defaultValue)},");
         // Class
       } else if (_checkForLooseMap.hasAnnotationOfExact(field.type.element!) ||
           _checkForLooseDocument.hasAnnotationOfExact(field.type.element!)) {
@@ -281,7 +283,7 @@ String convertToFirestore(
           // defaultValue = ", defaultValue: const {}";
         }
         classBuffer.write(
-            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element as ClassElement, recase, globalSaveMode, suppressWarnings, parent: inheritedName, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
+            "...{'$name' : ToFs.map(${convertToFirestore(field.type.element as ClassElement, recase, globalSaveMode, suppressWarnings, parent: inheritedName + nullSuffix, nestLevel: nestLevel)}, '$inheritedNameDisplay'$mode)},");
         // List
       } else if (field.type.isDartCoreList) {
         final elementTypes = _getGenericTypes(field.type);
@@ -299,7 +301,8 @@ String convertToFirestore(
         }
         final elementType = elementTypes.first;
         final listBuf = StringBuffer();
-        listBuf.write("...{'$name' : ToFs.list(e?.$inheritedName?.map((e) => ");
+        listBuf.write(
+            "...{'$name' : ToFs.list(e.$inheritedName$nullSuffix.map((e) => ");
         if (elementType.isDartCoreString) {
           var defaultValue = '';
           if (nullMode == 0) {
@@ -442,7 +445,7 @@ String convertToFirestore(
           listBuf.write(
               "ToFs.map(${convertToFirestore(elementType.element as ClassElement, recase, globalSaveMode, suppressWarnings, nestLevel: 0, inList: true)}, '$inheritedNameDisplay'$mode)");
         }
-        listBuf.write(")?.toList(), '$inheritedNameDisplay'$mode)},");
+        listBuf.write(").toList(), '$inheritedNameDisplay'$mode)},");
         classBuffer.writeln(listBuf.toString());
       }
     }
